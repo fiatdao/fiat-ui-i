@@ -395,7 +395,8 @@ const Home: NextPage = () => {
                 boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
                 '&:hover': {
                   transform: 'scale(1.03)'
-                }
+                },
+                border: 'none',
               }}
             >
               {fiatBalance}
