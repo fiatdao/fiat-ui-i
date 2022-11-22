@@ -48,7 +48,7 @@ const Home: NextPage = () => {
       underlierAllowance: null as null | BigNumber, // [underlierScale]
       underlierBalance: null as null | BigNumber, // [underlierScale]
       monetaDelegate: null as null | boolean, // [boolean]
-      fiatAllowance: null as null | BigNumber // [wad]
+      monetaFIATAllowance: null as null | BigNumber, // [wad]
     },
     modifyPositionFormData: {
       outdated: true,
@@ -273,15 +273,15 @@ const Home: NextPage = () => {
       const signer = (await connector?.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
-      const [underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance] = await contextData.fiat.multicall([
+      const [underlierAllowance, underlierBalance, monetaDelegate, monetaFIATAllowance] = await contextData.fiat.multicall([
         { contract: underlier, method: 'allowance', args: [user, proxy] },
         { contract: underlier, method: 'balanceOf', args: [user] },
         { contract: codex, method: 'delegates', args: [proxy, moneta.address] },
-        { contract: fiat, method: 'allowance', args: [user, proxy] }
+        { contract: fiat, method: 'allowance', args: [proxy, moneta.address] },
       ]);
 
       setModifyPositionData({
-        ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, fiatAllowance
+        ...modifyPositionData, ...data, underlierAllowance, underlierBalance, monetaDelegate, monetaFIATAllowance
       });
     })();
 
@@ -352,25 +352,26 @@ const Home: NextPage = () => {
     return response;
   }
 
-  const setFIATAllowance = async (fiat: any, amount: BigNumber) => {
-    const token = fiat.getContracts().fiat;
+  const setMonetaFIATAllowance = async (fiat: any, amount: BigNumber) => {
+    const { moneta, vaultEPTActions, fiat: token } = fiat.getContracts();
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = amount.add(WAD);
-    const response = await sendStatefulTransaction(fiat, false, 'setFIATAllowance', token, 'approve', contextData.proxies[0], allowance);
+    // TODO: describe why calling executing approve(moneta.address, amount) via proxy doesn't work
+    const response = await sendStatefulTransaction(fiat, true, 'setMonetaFIATAllowance', vaultEPTActions, 'approveFIAT', moneta.address, allowance);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Set FIAT allowance',
+      description: 'Set Moneta FIAT allowance',
     });
-    const fiatAllowance = await token.allowance(contextData.user, contextData.proxies[0])
-    setModifyPositionData({ ...modifyPositionData, fiatAllowance });
+    const monetaFIATAllowance = await token.allowance(contextData.proxies[0], moneta.address)
+    setModifyPositionData({ ...modifyPositionData, monetaFIATAllowance });
   }
 
-  const unsetFIATAllowance = async (fiat: any) => {
-    const token = fiat.getContracts().fiat;
-    const response =  await sendStatefulTransaction(fiat, false, 'unsetFIATAllowance', token, 'approve', contextData.proxies[0], 0);
+  const unsetMonetaFIATAllowance = async (fiat: any) => {
+    const { moneta, vaultEPTActions } = fiat.getContracts();
+    const response = await sendStatefulTransaction(fiat, true, 'unsetMonetaFIATAllowance', vaultEPTActions, 'approveFIAT', moneta.address, 0);
     addRecentTransaction({
       hash: response.transactionHash,
-      description: 'Reset FIAT allowance',
+      description: 'Reset Moneta FIAT allowance',
     });
     return response;
   }
@@ -622,15 +623,15 @@ const Home: NextPage = () => {
         modifyPositionData={modifyPositionData}
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
-        setFIATAllowance={setFIATAllowance}
+        setMonetaFIATAllowance={setMonetaFIATAllowance}
         setTransactionStatus={(status) =>
           setTransactionData({ ...transactionData, status })
         }
         setMonetaDelegate={setMonetaDelegate}
         setUnderlierAllowance={setUnderlierAllowance}
         transactionData={transactionData}
-        unsetFIATAllowance={unsetFIATAllowance}
         unsetMonetaDelegate={unsetMonetaDelegate}
+        unsetMonetaFIATAllowance={unsetMonetaFIATAllowance}
         unsetUnderlierAllowance={unsetUnderlierAllowance}
         open={(!!selectedPositionId)}
         onClose={() => {

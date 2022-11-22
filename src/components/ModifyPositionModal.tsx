@@ -27,12 +27,12 @@ interface ModifyPositionModalProps {
   modifyPositionData: any;
   redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  setFIATAllowance: (fiat: any, amount: BigNumber) => any;
+  setMonetaFIATAllowance: (fiat: any, amount: BigNumber) => any;
   setTransactionStatus: (status: TransactionStatus) => void;
   setMonetaDelegate: (fiat: any) => any;
   setUnderlierAllowance: (fiat: any, amount: BigNumber) => any;
   transactionData: any;
-  unsetFIATAllowance: (fiat: any) => any;
+  unsetMonetaFIATAllowance: (fiat: any) => any;
   unsetMonetaDelegate: (fiat: any) => any;
   unsetUnderlierAllowance: (fiat: any) => any;
   open: boolean;
@@ -85,8 +85,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     underlierAllowance,
     underlierBalance,
     monetaDelegate,
-    fiatAllowance,
-    position
+    monetaFIATAllowance,
+    position,
   } = props.modifyPositionData;
 
   const { action: currentTxAction } = props.transactionData;
@@ -457,19 +457,19 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => fiatAllowance?.gt(0) && fiatAllowance?.gte(modifyPositionStore.deltaDebt) ?? false}
+              checked={() => monetaFIATAllowance?.gt(0) && monetaFIATAllowance?.gte(modifyPositionStore.deltaDebt) ?? false}
               onChange={async () => {
-                if (modifyPositionStore.deltaDebt.gt(0) && fiatAllowance.gte(modifyPositionStore.deltaDebt)) {
+                if (modifyPositionStore.deltaDebt.gt(0) && monetaFIATAllowance.gte(modifyPositionStore.deltaDebt)) {
                   try {
                     setRpcError('');
-                    await props.unsetFIATAllowance(props.contextData.fiat);
+                    await props.unsetMonetaFIATAllowance(props.contextData.fiat);
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
                 } else {
                   try {
                     setRpcError('');
-                    await props.setFIATAllowance(props.contextData.fiat, modifyPositionStore.deltaDebt);
+                    await props.setMonetaFIATAllowance(props.contextData.fiat, modifyPositionStore.deltaDebt);
                   } catch (e: any) {
                     setRpcError(e.message);
                   }
@@ -477,7 +477,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               }}
               color='primary'
               icon={
-                ['setFIATAllowance', 'unsetFIATAllowance'].includes(currentTxAction || '') && props.disableActions ? (
+                ['setMonetaFIATAllowance', 'unsetMonetaFIATAllowance'].includes(currentTxAction || '') && props.disableActions ? (
                   <Loading size='xs' />
                 ) : null
               }
@@ -498,10 +498,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               if (!modifyPositionStore.underlier.isZero() && underlierAllowance.lt(modifyPositionStore.underlier)) return true;
             } else if (modifyPositionStore.mode === 'withdraw') {
               if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
-              if (!modifyPositionStore.deltaDebt.isZero() && fiatAllowance.lt(modifyPositionStore.deltaDebt)) return true;
+              if (!modifyPositionStore.deltaDebt.isZero() && monetaFIATAllowance.lt(modifyPositionStore.deltaDebt)) return true;
             } else if (modifyPositionStore.mode === 'redeem') {
               if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
-              if (!modifyPositionStore.deltaDebt.isZero() && fiatAllowance.lt(modifyPositionStore.deltaDebt)) return true;
+              if (!modifyPositionStore.deltaDebt.isZero() && monetaFIATAllowance.lt(modifyPositionStore.deltaDebt)) return true;
             }
             return false;
           })()}
