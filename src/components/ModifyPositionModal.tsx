@@ -16,7 +16,7 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, floor5, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
-import { useModifyPositionStore } from '../stores/modifyPositionStore';
+import { Mode, useModifyPositionStore } from '../stores/modifyPositionStore';
 import { Alert } from './Alert';
 import { InputLabelWithMax } from './InputLabelWithMax';
 
@@ -64,7 +64,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
 
   React.useEffect(() => {
     if (matured && modifyPositionStore.mode !== 'redeem') {
-      modifyPositionStore.setMode('redeem');
+      modifyPositionStore.setMode(Mode.REDEEM);
     }  
   }, [modifyPositionStore, matured, props.contextData.fiat, props.modifyPositionData])
 
@@ -141,22 +141,22 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               <>
                 <Navbar.Link
                   isDisabled={props.disableActions}
-                  isActive={modifyPositionStore.mode === 'deposit'}
+                  isActive={modifyPositionStore.mode === 'increase'}
                   onClick={() => {
                     if (props.disableActions) return;
                     modifyPositionStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
-                    modifyPositionStore.setMode('deposit');
+                    modifyPositionStore.setMode(Mode.INCREASE);
                   }}
                 >
                   Increase
                 </Navbar.Link>
                 <Navbar.Link
                   isDisabled={props.disableActions}
-                  isActive={modifyPositionStore.mode === 'withdraw'}
+                  isActive={modifyPositionStore.mode === 'decrease'}
                   onClick={() => {
                     if (props.disableActions) return;
                     modifyPositionStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
-                    modifyPositionStore.setMode('withdraw');
+                    modifyPositionStore.setMode(Mode.DECREASE);
                   }}
                 >
                   Decrease
@@ -169,7 +169,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
                 isActive={modifyPositionStore.mode === 'redeem'}
                 onClick={() => {
                   modifyPositionStore.resetCollateralAndDebtInputs(props.contextData.fiat, props.modifyPositionData);
-                  modifyPositionStore.setMode('redeem');
+                  modifyPositionStore.setMode(Mode.REDEEM);
                 }}
               >
                 Redeem
@@ -180,7 +180,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         <Text b size={'m'}>
           Inputs
         </Text>
-        {underlierBalance && modifyPositionStore.mode === 'deposit' && (
+        {underlierBalance && modifyPositionStore.mode === 'increase' && (
           <Text size={'$sm'}>
             Wallet: {commifyToDecimalPlaces(underlierBalance, underlierScale, 2)} {underlierSymbol}
           </Text>
@@ -191,7 +191,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           wrap='wrap'
           css={{ marginBottom: '1rem' }}
         >
-          {modifyPositionStore.mode === 'deposit' && (
+          {modifyPositionStore.mode === 'increase' && (
             <Input
               label={'Underlier to deposit'}
               disabled={props.disableActions}
@@ -208,7 +208,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               width='15rem'
             />
           )}
-          {(modifyPositionStore.mode === 'withdraw' || modifyPositionStore.mode === 'redeem') && (
+          {(modifyPositionStore.mode === 'decrease' || modifyPositionStore.mode === 'redeem') && (
             <Input
               disabled={props.disableActions}
               value={floor2(wadToDec(modifyPositionStore.deltaCollateral))}
@@ -221,7 +221,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
               label={
-                modifyPositionStore.mode === 'withdraw'
+                modifyPositionStore.mode === 'decrease'
                   ? <InputLabelWithMax
                     label='Collateral to withdraw and swap'
                     onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(props.contextData.fiat, props.modifyPositionData)}
@@ -238,7 +238,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               width={modifyPositionStore.mode === 'redeem' ? '100%' : '15rem'}
             />
           )}
-          {(modifyPositionStore.mode === 'deposit' || modifyPositionStore.mode === 'withdraw') && (
+          {(modifyPositionStore.mode === 'increase' || modifyPositionStore.mode === 'decrease') && (
             <Input
               disabled={props.disableActions}
               value={floor2(Number(wadToDec(modifyPositionStore.slippagePct)) * 100)}
@@ -269,7 +269,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           label={
-            modifyPositionStore.mode === 'deposit'
+            modifyPositionStore.mode === 'increase'
               ? 'FIAT to borrow'
               : <InputLabelWithMax
                   label='FIAT to pay back'
@@ -281,7 +281,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           size='sm'
           borderWeight='light'
         />
-        {(modifyPositionStore.mode === 'withdraw' || modifyPositionStore.mode === 'redeem') && (
+        {(modifyPositionStore.mode === 'decrease' || modifyPositionStore.mode === 'redeem') && (
           <Text size={'$sm'}>
             Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
           </Text>
@@ -289,7 +289,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
       </Modal.Body>
       <Spacer y={0.75} />
       <Card.Divider />
-      {(modifyPositionStore.mode === 'deposit' || modifyPositionStore.mode === 'withdraw') && (
+      {(modifyPositionStore.mode === 'increase' || modifyPositionStore.mode === 'decrease') && (
         <>
           <Modal.Body>
             <Spacer y={0} />
@@ -301,18 +301,18 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
               value={
                 (modifyPositionStore.formDataLoading)
                   ? ' '
-                  : (modifyPositionStore.mode === 'deposit')
+                  : (modifyPositionStore.mode === 'increase')
                     ? floor2(wadToDec(modifyPositionStore.deltaCollateral))
                     : floor2(scaleToDec(modifyPositionStore.underlier, underlierScale))
               }
               placeholder='0'
               type='string'
               label={
-                modifyPositionStore.mode === 'deposit'
+                modifyPositionStore.mode === 'increase'
                   ? 'Collateral to deposit (incl. slippage)'
                   : 'Underliers to withdraw (incl. slippage)'
               }
-              labelRight={modifyPositionStore.mode === 'deposit' ? symbol : underlierSymbol}
+              labelRight={modifyPositionStore.mode === 'increase' ? symbol : underlierSymbol}
               contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
               size='sm'
               status='primary'
@@ -387,7 +387,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
         />
       </Modal.Body>
       <Modal.Footer justify='space-evenly'>
-        {modifyPositionStore.mode === 'deposit' && (
+        {modifyPositionStore.mode === 'increase' && (
           <>
             <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
             <Switch
@@ -422,7 +422,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             />
           </>
         )}
-        {(modifyPositionStore.mode === 'withdraw' || modifyPositionStore.mode === 'redeem') && (
+        {(modifyPositionStore.mode === 'decrease' || modifyPositionStore.mode === 'redeem') && (
           <>
             <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
             <Switch
@@ -491,11 +491,11 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           disabled={(() => {
             if (props.disableActions || !hasProxy) return true;
             if (modifyPositionStore.formErrors.length !== 0 || modifyPositionStore.formWarnings.length !== 0) return true;
-            if (modifyPositionStore.mode === 'deposit') {
+            if (modifyPositionStore.mode === 'increase') {
               if (monetaDelegate === false) return true;
               if (modifyPositionStore.underlier.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
               if (!modifyPositionStore.underlier.isZero() && underlierAllowance.lt(modifyPositionStore.underlier)) return true;
-            } else if (modifyPositionStore.mode === 'withdraw') {
+            } else if (modifyPositionStore.mode === 'decrease') {
               if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
               if (!modifyPositionStore.deltaDebt.isZero() && monetaFIATAllowance.lt(modifyPositionStore.deltaDebt)) return true;
             } else if (modifyPositionStore.mode === 'redeem') {
@@ -516,9 +516,9 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           onPress={async () => {
             try {
               setRpcError('');
-              if (modifyPositionStore.mode === 'deposit') {
+              if (modifyPositionStore.mode === 'increase') {
                 await props.buyCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt, modifyPositionStore.underlier);
-              } else if (modifyPositionStore.mode === 'withdraw') {
+              } else if (modifyPositionStore.mode === 'decrease') {
                 await props.sellCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt, modifyPositionStore.underlier);
               } else if (modifyPositionStore.mode === 'redeem') {
                 await props.redeemCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt);
@@ -529,8 +529,8 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             }
           }}
         >
-          {modifyPositionStore.mode === 'deposit' && 'Deposit'}
-          {modifyPositionStore.mode === 'withdraw' && 'Withdraw'}
+          {modifyPositionStore.mode === 'increase' && 'Increase'}
+          {modifyPositionStore.mode === 'decrease' && 'Decrease'}
           {modifyPositionStore.mode === 'redeem' && 'Redeem'}
         </Button>
       </Modal.Footer>

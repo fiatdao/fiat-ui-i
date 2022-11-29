@@ -5,7 +5,7 @@ import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
 import { BigNumber, ContractReceipt, ethers } from 'ethers';
-import { decToWad, FIAT, WAD, wadToDec, ZERO } from '@fiatdao/sdk';
+import { FIAT, WAD, wadToDec } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
@@ -46,19 +46,6 @@ const Home: NextPage = () => {
       underlierBalance: null as null | BigNumber, // [underlierScale]
       monetaFIATAllowance: null as null | BigNumber, // [wad]
       proxyFIATAllowance: null as null | BigNumber, // [wad]
-    },
-    modifyPositionFormData: {
-      outdated: true,
-      mode: 'deposit', // [deposit, withdraw, redeem]
-      slippagePct: decToWad('0.001') as BigNumber, // [wad]
-      underlier: ZERO as BigNumber, // [underlierScale]
-      deltaCollateral: ZERO as BigNumber, // [wad]
-      deltaDebt: ZERO as BigNumber, // [wad]
-      targetedCollRatio: decToWad('1.2') as BigNumber, // [wad]
-      collateral: ZERO as BigNumber, // [wad]
-      debt: ZERO as BigNumber, // [wad]
-      collRatio: ZERO as BigNumber, // [wad] estimated new collateralization ratio
-      error: null as null | string
     },
     transactionData: {
       action: null as null | string,

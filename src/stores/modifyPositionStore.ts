@@ -5,9 +5,16 @@ import { decToScale, decToWad, scaleToWad, WAD, wadToDec, wadToScale, ZERO } fro
 import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
 
+export const enum Mode {
+  CREATE='create',
+  INCREASE='increase',
+  DECREASE='decrease',
+  REDEEM='redeem',
+}
+
 /// A store for setting and getting form values to create and manage positions.
 interface ModifyPositionState {
-  mode: string; // [deposit, withdraw, redeem]
+  mode: Mode; // [deposit, withdraw, redeem]
   slippagePct: BigNumber; // [wad]
   underlier: BigNumber; // [underlierScale]
   deltaCollateral: BigNumber; // [wad]
@@ -22,7 +29,7 @@ interface ModifyPositionState {
 }
 
 interface ModifyPositionActions {
-  setMode: (mode: string) => void;
+  setMode: (mode: Mode) => void;
   setUnderlier: (
     fiat: any,
     value: string,
@@ -90,7 +97,7 @@ interface ModifyPositionActions {
 }
 
 const initialState = {
-  mode: 'deposit', // [deposit, withdraw, redeem]
+  mode: Mode.INCREASE,
   slippagePct: decToWad('0.001'),
   underlier: ZERO,
   deltaCollateral: ZERO,
@@ -107,7 +114,7 @@ const initialState = {
 export const useModifyPositionStore = create<ModifyPositionState & ModifyPositionActions>()((set, get) => ({
     ...initialState,
 
-    setMode: (mode) => { set(() => ({ mode })); },
+    setMode: (mode: Mode) => { set(() => ({ mode })); },
 
     // Sets underlier and estimates output of bond tokens
     setUnderlier: async (fiat, value, modifyPositionData, selectedCollateralTypeId) => {
@@ -205,16 +212,17 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
       // Reset form errors and warnings on new input
       set(() => ({ formWarnings: [], formErrors: [] }));
 
-      if (mode === 'deposit') {
+      if (mode === Mode.CREATE || Mode.INCREASE) {
+        // TODO: remove selectedCollateralTypeId check since we can use better semantic disambiguation of create vs. increase mode
         // `selectedCollateralTypeId` will be present if user is creating a new position
         if (selectedCollateralTypeId) {
           await calculatePositionValuesAfterCreation(fiat, modifyPositionData);
         } else {
           await calculatePositionValuesAfterDeposit(fiat, modifyPositionData);
         }
-      } else if (mode === 'withdraw') {
+      } else if (mode === Mode.DECREASE) {
         await calculatePositionValuesAfterWithdraw(fiat, modifyPositionData);
-      } else if (mode === 'redeem') {
+      } else if (mode === Mode.REDEEM) {
         await calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
       } else {
         console.error('Invalid mode');

@@ -143,7 +143,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           containerCss={{ justifyContent: 'center', background: 'transparent' }}
         >
           <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-            <Navbar.Link isDisabled={props.disableActions} isActive>Deposit</Navbar.Link>
+            <Navbar.Link isDisabled={props.disableActions} isActive>Create</Navbar.Link>
           </Navbar.Content>
         </Navbar>
         <Text b size={'m'}>
