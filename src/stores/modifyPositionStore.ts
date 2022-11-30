@@ -115,11 +115,11 @@ interface ModifyPositionActions {
     fiat: any,
     modifyPositionData: any,
   ) => Promise<void>;
-  calculatePositionValuesAfterDeposit: (
+  calculatePositionValuesAfterIncrease: (
     fiat: any,
     modifyPositionData: any,
   ) => Promise<void>;
-  calculatePositionValuesAfterWithdraw: (
+  calculatePositionValuesAfterDecrease: (
     fiat: any,
     modifyPositionData: any,
   ) => Promise<void>;
@@ -264,7 +264,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
           }));
 
           const newCreateFormState = { collateral, collRatio, debt, deltaCollateral, deltaDebt };
-          console.log('newCreateFormState: ', newCreateFormState);
+          console.log('[store] newCreateFormState: ', newCreateFormState);
           set((state) => ({ createState: { ...state.createState, ...newCreateFormState }}));
           set(() => ({ formDataLoading: false }));
         } catch (error: any) {
@@ -282,12 +282,57 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
 
 
     /*
+       ___ _   _  ____ ____  _____    _    ____  _____ 
+      |_ _| \ | |/ ___|  _ \| ____|  / \  / ___|| ____|
+       | ||  \| | |   | |_) |  _|   / _ \ \___ \|  _|  
+       | || |\  | |___|  _ <| |___ / ___ \ ___) | |___ 
+      |___|_| \_|\____|_| \_\_____/_/   \_\____/|_____|
+                                                       
+          _    ____ _____ ___ ___  _   _ ____  
+         / \  / ___|_   _|_ _/ _ \| \ | / ___| 
+        / _ \| |     | |  | | | | |  \| \___ \ 
+       / ___ \ |___  | |  | | |_| | |\  |___) |
+      /_/   \_\____| |_| |___\___/|_| \_|____/ 
+                                         
+    */
+
+    /*
+       ____  _____ ____ ____  _____    _    ____  _____ 
+      |  _ \| ____/ ___|  _ \| ____|  / \  / ___|| ____|
+      | | | |  _|| |   | |_) |  _|   / _ \ \___ \|  _|  
+      | |_| | |__| |___|  _ <| |___ / ___ \ ___) | |___ 
+      |____/|_____\____|_| \_\_____/_/   \_\____/|_____|
+                                                        
+          _    ____ _____ ___ ___  _   _ ____  
+         / \  / ___|_   _|_ _/ _ \| \ | / ___| 
+        / _ \| |     | |  | | | | |  \| \___ \ 
+       / ___ \ |___  | |  | | |_| | |\  |___) |
+      /_/   \_\____| |_| |___\___/|_| \_|____/ 
+                                         
+    */
+
+    /*
+       ____  _____ ____  _____ _____ __  __ 
+      |  _ \| ____|  _ \| ____| ____|  \/  |
+      | |_) |  _| | | | |  _| |  _| | |\/| |
+      |  _ <| |___| |_| | |___| |___| |  | |
+      |_| \_\_____|____/|_____|_____|_|  |_|
+                                            
+          _    ____ _____ ___ ___  _   _ ____  
+         / \  / ___|_   _|_ _/ _ \| \ | / ___| 
+        / _ \| |     | |  | | | | |  \| \___ \ 
+       / ___ \ |___  | |  | | |_| | |\  |___) |
+      /_/   \_\____| |_| |___\___/|_| \_|____/ 
+                                         
+    */
+
+    /*
         ___   ____      _    ____ _____ ___ ___  _   _ ____  
        / _ \ / ___|    / \  / ___|_   _|_ _/ _ \| \ | / ___| 
       | | | | |  _    / _ \| |     | |  | | | | |  \| \___ \ 
       | |_| | |_| |  / ___ \ |___  | |  | | |_| | |\  |___) |
        \___/ \____| /_/   \_\____| |_| |___\___/|_| \_|____/ 
-                                                             
+
     */
     setMode: (mode: Mode) => { set(() => ({ mode })); },
 
@@ -341,6 +386,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
       let newDeltaCollateral: BigNumber;
       if (value === null || value === '') newDeltaCollateral = initialState.deltaCollateral;
       else newDeltaCollateral = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
+      console.log('[store] setDeltaCollateral: ', newDeltaCollateral.toString());
       set(() => ({ deltaCollateral: newDeltaCollateral }));
       // Re-estimate new collateralization ratio and debt
       const { calculatePositionValuesAfterAction } = get();
@@ -382,21 +428,21 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
     // Calculates new collateralizationRatio, collateral, debt, and deltaCollateral as needed
     // Debounced to prevent spamming RPC calls
     calculatePositionValuesAfterAction: debounce(async function (fiat: any, modifyPositionData: any, selectedCollateralTypeId?: string) {
-      const { mode, calculatePositionValuesAfterCreation, calculatePositionValuesAfterDeposit, calculatePositionValuesAfterWithdraw, calculatePositionValuesAfterRedeem } = get();
+      const { mode, calculatePositionValuesAfterCreation, calculatePositionValuesAfterIncrease, calculatePositionValuesAfterDecrease, calculatePositionValuesAfterRedeem } = get();
 
       // Reset form errors and warnings on new input
       set(() => ({ formWarnings: [], formErrors: [] }));
 
-      if (mode === Mode.CREATE || Mode.INCREASE) {
+      if (mode === Mode.CREATE || mode === Mode.INCREASE) {
         // TODO: remove selectedCollateralTypeId check since we can use better semantic disambiguation of create vs. increase mode
         // `selectedCollateralTypeId` will be present if user is creating a new position
         if (selectedCollateralTypeId) {
           await calculatePositionValuesAfterCreation(fiat, modifyPositionData);
         } else {
-          await calculatePositionValuesAfterDeposit(fiat, modifyPositionData);
+          await calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
         }
       } else if (mode === Mode.DECREASE) {
-        await calculatePositionValuesAfterWithdraw(fiat, modifyPositionData);
+        await calculatePositionValuesAfterDecrease(fiat, modifyPositionData);
       } else if (mode === Mode.REDEEM) {
         await calculatePositionValuesAfterRedeem(fiat, modifyPositionData);
       } else {
@@ -469,7 +515,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
       }
     },
 
-    calculatePositionValuesAfterDeposit: async function (fiat: any, modifyPositionData: any) {
+    calculatePositionValuesAfterIncrease: async function (fiat: any, modifyPositionData: any) {
       const { collateralType, position } = modifyPositionData;
       const { tokenScale, underlierScale } = collateralType.properties;
       const { codex: { debtFloor } } = collateralType.settings;
@@ -532,7 +578,7 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
       }
     },
 
-    calculatePositionValuesAfterWithdraw: async function (fiat: any, modifyPositionData: any) {
+    calculatePositionValuesAfterDecrease: async function (fiat: any, modifyPositionData: any) {
       const { collateralType, position } = modifyPositionData;
       const { tokenScale } = collateralType.properties;
       const { codex: { debtFloor } } = collateralType.settings;
