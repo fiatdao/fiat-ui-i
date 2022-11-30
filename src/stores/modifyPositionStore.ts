@@ -451,6 +451,9 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
         const { slippagePct, underlier } = get().increaseState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
+        // Reset form errors and warnings on new input
+        set(() => ({ formWarnings: [], formErrors: [] }));
+
         try {
           let deltaCollateral = ZERO;
           if (!underlier.isZero()) {
@@ -532,7 +535,6 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
 
     decreaseActions: {
       setDeltaCollateral: (fiat, value, modifyPositionData) => {
-        console.log('val: ', value);
         let newDeltaCollateral: BigNumber;
         if (value === null || value === '') newDeltaCollateral = initialState.decreaseState.deltaCollateral;
         else newDeltaCollateral = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
@@ -611,6 +613,9 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
         const { tokenScale } = collateralType.properties;
         const { codex: { debtFloor } } = collateralType.settings;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
+
+        // Reset form errors and warnings on new input
+        set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
           const { deltaCollateral, deltaDebt, slippagePct } = get().decreaseState;
