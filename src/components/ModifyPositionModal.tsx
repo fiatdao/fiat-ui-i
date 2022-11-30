@@ -176,6 +176,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             modifyPositionData={props.modifyPositionData}
             symbol={symbol}
             underlierSymbol={underlierSymbol}
+            position={position}
             transactionData={props.transactionData}
             virtualRate={virtualRate}
             fairPrice={fairPrice}
@@ -187,6 +188,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             disableActions={props.disableActions}
             modifyPositionData={props.modifyPositionData}
             symbol={symbol}
+            position={position}
             transactionData={props.transactionData}
             virtualRate={virtualRate}
             fairPrice={fairPrice}
@@ -534,6 +536,7 @@ const DecreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
+  position,
   symbol,
   underlierSymbol,
   transactionData,
@@ -544,6 +547,7 @@ const DecreaseForm = ({
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
+  position: any,
   symbol: string,
   underlierSymbol: string,
   transactionData: any,
@@ -594,9 +598,9 @@ const DecreaseForm = ({
         >
           <Input
             disabled={disableActions}
-            value={floor2(wadToDec(modifyPositionStore.deltaCollateral))}
+            value={floor2(wadToDec(modifyPositionStore.decreaseState.deltaCollateral))}
             onChange={(event) => {
-              modifyPositionStore.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+              modifyPositionStore.decreaseActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
             }}
             placeholder='0'
             inputMode='decimal'
@@ -606,7 +610,7 @@ const DecreaseForm = ({
             label={
               <InputLabelWithMax
                 label='Collateral to withdraw and swap'
-                onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
+                onMaxClick={() => modifyPositionStore.decreaseActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
               />
             }
             labelRight={symbol}
@@ -617,9 +621,9 @@ const DecreaseForm = ({
           />
           <Input
             disabled={disableActions}
-            value={floor2(Number(wadToDec(modifyPositionStore.slippagePct)) * 100)}
+            value={floor2(Number(wadToDec(modifyPositionStore.decreaseState.slippagePct)) * 100)}
             onChange={(event) => {
-              modifyPositionStore.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+              modifyPositionStore.decreaseActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
             }}
             step='0.01'
             placeholder='0'
@@ -634,9 +638,9 @@ const DecreaseForm = ({
         </Grid.Container>
         <Input
           disabled={disableActions}
-          value={floor5(wadToDec(modifyPositionStore.deltaDebt))}
+          value={floor5(wadToDec(modifyPositionStore.decreaseState.deltaDebt))}
           onChange={(event) => {
-            modifyPositionStore.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
+            modifyPositionStore.decreaseActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
@@ -646,7 +650,7 @@ const DecreaseForm = ({
           label={
             <InputLabelWithMax
               label='FIAT to pay back'
-              onMaxClick={() => modifyPositionStore.setMaxDeltaDebt(contextData.fiat, modifyPositionData)}
+              onMaxClick={() => modifyPositionStore.decreaseActions.setMaxDeltaDebt(contextData.fiat, modifyPositionData)}
             />
           }
           labelRight={'FIAT'}
@@ -671,7 +675,7 @@ const DecreaseForm = ({
           value={
             (modifyPositionStore.formDataLoading)
               ? ' '
-              : floor2(scaleToDec(modifyPositionStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))
+              : floor2(scaleToDec(modifyPositionStore.decreaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))
           }
           placeholder='0'
           type='string'
@@ -685,6 +689,24 @@ const DecreaseForm = ({
 
       <Spacer y={0.75} />
       <Card.Divider />
+
+      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
+        <PositionPreview
+          fiat={contextData.fiat}
+          formDataLoading={modifyPositionStore.formDataLoading}
+          positionCollateral={position.collateral}
+          positionNormalDebt={position.normalDebt}
+          estimatedCollateral={modifyPositionStore.decreaseState.collateral}
+          estimatedCollateralRatio={modifyPositionStore.decreaseState.collRatio}
+          estimatedDebt={modifyPositionStore.decreaseState.debt}
+          virtualRate={virtualRate}
+          fairPrice={fairPrice}
+          symbol={symbol}
+        />
+      </Modal.Body>
+
+      <Spacer y={0.75} />
+      <Card.Divider />
     </>
   );
 }
@@ -693,6 +715,7 @@ const RedeemForm = ({
   contextData,
   disableActions,
   modifyPositionData,
+  position,
   symbol,
   transactionData,
   virtualRate,
@@ -702,6 +725,7 @@ const RedeemForm = ({
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
+  position: any,
   symbol: string,
   transactionData: any,
   virtualRate: BigNumber,
@@ -738,56 +762,81 @@ const RedeemForm = ({
   }
 
   return (
-    <Modal.Body>
-      <Text b size={'m'}>
-        Inputs
-      </Text>
-      <Grid.Container
-        gap={0}
-        justify='space-between'
-        wrap='wrap'
-        css={{ marginBottom: '1rem' }}
-      >
+    <>
+      <Modal.Body>
+        <Text b size={'m'}>
+          Inputs
+        </Text>
+        <Grid.Container
+          gap={0}
+          justify='space-between'
+          wrap='wrap'
+          css={{ marginBottom: '1rem' }}
+        >
+          <Input
+            disabled={disableActions}
+            value={floor2(wadToDec(modifyPositionStore.deltaCollateral))}
+            onChange={(event) => {
+              modifyPositionStore.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+            }}
+            placeholder='0'
+            inputMode='decimal'
+            // Bypass type warning from passing a custom component instead of a string
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
+            labelRight={symbol}
+            bordered
+            size='sm'
+            borderWeight='light'
+            width={'100%'}
+          />
+        </Grid.Container>
         <Input
           disabled={disableActions}
-          value={floor2(wadToDec(modifyPositionStore.deltaCollateral))}
+          value={floor5(wadToDec(modifyPositionStore.deltaDebt))}
           onChange={(event) => {
-            modifyPositionStore.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+            modifyPositionStore.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
           // Bypass type warning from passing a custom component instead of a string
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
-          labelRight={symbol}
+          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => modifyPositionStore.setMaxDeltaDebt(contextData.fiat, modifyPositionData)} />}
+          labelRight={'FIAT'}
           bordered
           size='sm'
           borderWeight='light'
-          width={'100%'}
         />
-      </Grid.Container>
-      <Input
-        disabled={disableActions}
-        value={floor5(wadToDec(modifyPositionStore.deltaDebt))}
-        onChange={(event) => {
-          modifyPositionStore.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
-        }}
-        placeholder='0'
-        inputMode='decimal'
-        // Bypass type warning from passing a custom component instead of a string
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => modifyPositionStore.setMaxDeltaDebt(contextData.fiat, modifyPositionData)} />}
-        labelRight={'FIAT'}
-        bordered
-        size='sm'
-        borderWeight='light'
-      />
-      <Text size={'$sm'}>
-        Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
-      </Text>
-    </Modal.Body>
+        <Text size={'$sm'}>
+          Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
+        </Text>
+      </Modal.Body>
+
+      <Spacer y={0.75} />
+      <Card.Divider />
+
+      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
+        {/*
+        <PositionPreview
+          fiat={contextData.fiat}
+          formDataLoading={modifyPositionStore.formDataLoading}
+          positionCollateral={position.collateral}
+          positionNormalDebt={position.normalDebt}
+          estimatedCollateral={modifyPositionStore.redeemState.collateral}
+          estimatedCollateralRatio={modifyPositionStore.increaseState.collRatio}
+          estimatedDebt={modifyPositionStore.redeemState.debt}
+          virtualRate={virtualRate}
+          fairPrice={fairPrice}
+          symbol={symbol}
+        />
+        */}
+      </Modal.Body>
+
+      <Spacer y={0.75} />
+      <Card.Divider />
+    </>
   )
 }
 
