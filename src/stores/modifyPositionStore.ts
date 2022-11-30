@@ -24,8 +24,19 @@ interface ModifyPositionState {
     debt: BigNumber; // [wad]
     deltaCollateral: BigNumber; // [wad]
     deltaDebt: BigNumber; // [wad]
-    // TODO: give it's own form errors and warning
+    // TODO: give its own form errors and warning
   };
+  increaseState: {
+    underlier: BigNumber; // [underlierScale]
+    slippagePct: BigNumber; // [wad]
+    collateral: BigNumber; // [wad]
+    collRatio: BigNumber; // [wad] estimated new collateralization ratio
+    debt: BigNumber; // [wad]
+    deltaCollateral: BigNumber; // [wad]
+    deltaDebt: BigNumber; // [wad]
+  };
+  // decreaseState: {
+  // }
   slippagePct: BigNumber; // [wad]
   underlier: BigNumber; // [underlierScale]
   deltaCollateral: BigNumber; // [wad]
@@ -65,6 +76,31 @@ interface ModifyPositionActions {
       modifyPositionData: any,
     ) => void;
   },
+  increaseActions: {
+    setUnderlier: (
+      fiat: any,
+      value: string,
+      modifyPositionData: any,
+      selectedCollateralTypeId?: string
+    ) => void;
+    setSlippagePct: (
+      fiat: any,
+      value: string,
+      modifyPositionData: any,
+      selectedCollateralTypeId?: string
+    ) => void;
+    setDeltaDebt: (
+      fiat: any,
+      value: string,
+      modifyPositionData: any,
+    ) => void;
+    calculatePositionValuesAfterIncrease: (
+      fiat: any,
+      modifyPositionData: any,
+    ) => void;
+  },
+  // decreaseActions: {
+  // },
   setUnderlier: (
     fiat: any,
     value: string,
@@ -130,6 +166,16 @@ interface ModifyPositionActions {
 const initialState = {
   mode: Mode.INCREASE,
   createState: {
+    underlier: ZERO,
+    slippagePct: decToWad('0.001'),
+    targetedCollRatio: decToWad('1.2'),
+    collateral: ZERO, // [wad]
+    collRatio: ZERO, // [wad] estimated new collateralization ratio
+    debt: ZERO, // [wad]
+    deltaCollateral: ZERO,
+    deltaDebt: ZERO, // [wad]
+  },
+  increaseState: {
     underlier: ZERO,
     slippagePct: decToWad('0.001'),
     targetedCollRatio: decToWad('1.2'),
@@ -269,12 +315,15 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
             formDataLoading: false,
           }));
         } catch (error: any) {
-          set(() => ({
-            deltaCollateral: ZERO,
-            deltaDebt: ZERO,
-            collateral: ZERO,
-            debt: ZERO,
-            collRatio: ZERO,
+          set((state) => ({
+            createState: {
+              ...state.createState,
+              deltaCollateral: ZERO,
+              deltaDebt: ZERO,
+              collateral: ZERO,
+              debt: ZERO,
+              collRatio: ZERO,
+            },
             formErrors: [...get().formErrors, error.message],
           }));
         }
@@ -296,6 +345,131 @@ export const useModifyPositionStore = create<ModifyPositionState & ModifyPositio
       /_/   \_\____| |_| |___\___/|_| \_|____/ 
                                          
     */
+
+    increaseActions: {
+      setUnderlier: async (fiat, value, modifyPositionData) => {
+        const collateralType = modifyPositionData.collateralType;
+        const underlierScale = collateralType.properties.underlierScale;
+        const underlier = value === null || value === ''
+          ? initialState.increaseState.underlier
+          : decToScale(floor4(Number(value) < 0 ? 0 : Number(value)), underlierScale);
+
+        set((state) => ({
+          increaseState: { ...state.increaseState, underlier },
+          formDataLoading: true,
+        }));
+        get().increaseActions.calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
+      },
+
+      setSlippagePct: (
+        fiat,
+        value,
+        modifyPositionData,
+      ) => {
+        let newSlippage: BigNumber;
+        if (value === null || value === '') {
+          newSlippage = initialState.slippagePct;
+        } else {
+          const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
+          newSlippage = decToWad(floor4(ceiled / 100));
+        }
+
+        set((state) => ({
+          increaseState: { ...state.increaseState, slippagePct: newSlippage },
+          formDataLoading: true,
+        }));
+        get().increaseActions.calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
+      },
+
+      setDeltaDebt: (
+        fiat,
+        value,
+        modifyPositionData,
+      ) => {
+        let newDeltaDebt: BigNumber;
+        if (value === null || value === '') newDeltaDebt = initialState.deltaDebt;
+        else newDeltaDebt = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
+
+        set((state) => ({
+          increaseState: {
+            ...state.increaseState,
+            deltaDebt: newDeltaDebt,
+          },
+          formDataLoading: true
+        }));
+        get().increaseActions.calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
+      },
+
+      calculatePositionValuesAfterIncrease: debounce(async (fiat: any, modifyPositionData: any) => {
+        const { collateralType, position } = modifyPositionData;
+        const { tokenScale, underlierScale } = collateralType.properties;
+        const { codex: { debtFloor } } = collateralType.settings;
+        const { slippagePct, underlier } = get().increaseState;
+        const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
+
+        try {
+          let deltaCollateral = ZERO;
+          if (!underlier.isZero()) {
+            try {
+              // Preview underlier to collateral token swap
+              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
+              // redemption price with a 1:1 exchange rate
+              const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
+              // apply slippagePct to preview
+              const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
+              // assert: minTokensOut > idealTokenOut
+              if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
+                { formWarnings: ['Large Price Impact (Negative Yield)'] }
+              ));
+              deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
+            } catch (e: any) {
+              if (e.reason && e.reason === 'BAL#001') {
+                // Catch balancer-specific underflow error
+                // https://dev.balancer.fi/references/error-codes
+                throw new Error('Insufficient liquidity to convert underlier to collateral');
+              }
+              throw e;
+            }
+          }
+
+          // Estimate new position values based on deltaDebt, taking into account an existing position's collateral
+          const { deltaDebt } = get().increaseState;
+          const collateral = position.collateral.add(deltaCollateral);
+          const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
+          const normalDebt = fiat.debtToNormalDebt(debt, rate);
+          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+
+          if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
+            formErrors: [
+              ...get().formErrors,
+              `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
+            ]
+          }));
+
+          if (debt.gt(0) && collRatio.lte(WAD)) set(() => ({
+            formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%']
+          }));
+
+          set((state) => ({
+            increaseState: { ...state.increaseState, collateral, collRatio, debt, deltaCollateral },
+            formDataLoading: false,
+          }));
+        } catch (e: any) {
+          set((state) => ({
+            increaseState: {
+              ...state.increaseState,
+              collateral: ZERO,
+              collRatio: ZERO,
+              debt: ZERO,
+              deltaCollateral: ZERO,
+              deltaDebt: ZERO,
+            },
+            formDataLoading: false,
+            formErrors: [...get().formErrors, e.message],
+          }));
+        }
+      }),
+    },
 
     /*
        ____  _____ ____ ____  _____    _    ____  _____ 

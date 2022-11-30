@@ -19,6 +19,7 @@ import { TransactionStatus } from '../../pages';
 import { Mode, useModifyPositionStore } from '../stores/modifyPositionStore';
 import { Alert } from './Alert';
 import { InputLabelWithMax } from './InputLabelWithMax';
+import shallow from 'zustand/shallow';
 
 interface ModifyPositionModalProps {
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
@@ -179,22 +180,26 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
 
       {
         modifyPositionStore.mode === Mode.INCREASE
-        ? <IncreaseInputs
+        ? <IncreaseForm
+            contextData={props.contextData}
+            disableActions={props.disableActions}
+            modifyPositionData={props.modifyPositionData}
+            symbol={symbol}
+            underlierSymbol={underlierSymbol}
+            position={position}
+            virtualRate={virtualRate}
+            fairPrice={fairPrice}
+          />
+        : modifyPositionStore.mode === Mode.DECREASE
+        ? <DecreaseForm
             contextData={props.contextData}
             disableActions={props.disableActions}
             modifyPositionData={props.modifyPositionData}
             symbol={symbol}
             underlierSymbol={underlierSymbol}
           />
-        : modifyPositionStore.mode === Mode.DECREASE
-        ? <DecreaseInputs
-            contextData={props.contextData}
-            disableActions={props.disableActions}
-            modifyPositionData={props.modifyPositionData}
-            symbol={symbol}
-          />
         : modifyPositionStore.mode === Mode.REDEEM
-        ? <RedeemInputs
+        ? <RedeemForm
             contextData={props.contextData}
             disableActions={props.disableActions}
             modifyPositionData={props.modifyPositionData}
@@ -202,59 +207,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           />
         : null
       }
-
-      <Spacer y={0.75} />
-      <Card.Divider />
-
-      {(modifyPositionStore.mode === Mode.INCREASE || modifyPositionStore.mode === Mode.DECREASE) && (
-        <>
-          <Modal.Body>
-            <Spacer y={0} />
-            <Text b size={'m'}>
-              Swap Preview
-            </Text>
-            <Input
-              readOnly
-              value={
-                (modifyPositionStore.formDataLoading)
-                  ? ' '
-                  : (modifyPositionStore.mode === Mode.INCREASE)
-                    ? floor2(wadToDec(modifyPositionStore.deltaCollateral))
-                    : floor2(scaleToDec(modifyPositionStore.underlier, underlierScale))
-              }
-              placeholder='0'
-              type='string'
-              label={
-                modifyPositionStore.mode === Mode.INCREASE
-                  ? 'Collateral to deposit (incl. slippage)'
-                  : 'Underliers to withdraw (incl. slippage)'
-              }
-              labelRight={modifyPositionStore.mode === Mode.INCREASE ? symbol : underlierSymbol}
-              contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
-              size='sm'
-              status='primary'
-            />
-          </Modal.Body>
-          <Spacer y={0.75} />
-          <Card.Divider />
-        </>
-      )}
-
-      <Spacer y={0.75} />
-      <Modal.Body>
-        <PositionPreview
-          fiat={props.contextData.fiat}
-          formDataLoading={modifyPositionStore.formDataLoading}
-          positionCollateral={position.collateral}
-          positionNormalDebt={position.normalDebt}
-          estimatedCollateral={modifyPositionStore.collateral}
-          estimatedCollateralRatio={modifyPositionStore.collRatio}
-          estimatedDebt={modifyPositionStore.debt}
-          virtualRate={virtualRate}
-          fairPrice={fairPrice}
-          symbol={symbol}
-        />
-      </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
         {modifyPositionStore.mode === Mode.INCREASE && (
@@ -408,21 +360,41 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   );
 };
 
-const IncreaseInputs = ({
+const IncreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
+  position,
+  symbol,
   underlierSymbol,
+  virtualRate,
+  fairPrice,
 }: {
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
+  position: any,
   symbol: string,
   underlierSymbol: string,
+  virtualRate: BigNumber,
+  fairPrice: BigNumber,
 }) => {
-  // TODO: select increase state & actions off store
-  const modifyPositionStore = useModifyPositionStore();
+  const modifyPositionStore = useModifyPositionStore(
+    React.useCallback(
+      (state) => ({
+        increaseState: state.increaseState,
+        increaseActions: state.increaseActions,
+        formDataLoading: state.formDataLoading,
+        formWarnings: state.formWarnings,
+        formErrors: state.formErrors,
+      }),
+      []
+    ), shallow
+  );
+  console.log('formdataloading: ', modifyPositionStore.formDataLoading)
+  
   return (
+    <>
     <Modal.Body>
       <Text b size={'m'}>
         Inputs
@@ -441,9 +413,9 @@ const IncreaseInputs = ({
         <Input
           label={'Underlier to deposit'}
           disabled={disableActions}
-          value={floor2(scaleToDec(modifyPositionStore.underlier, modifyPositionData.collateralType.properties.underlierScale))}
+          value={floor2(scaleToDec(modifyPositionStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))}
           onChange={(event) => {
-            modifyPositionStore.setUnderlier(contextData.fiat, event.target.value, modifyPositionData);
+            modifyPositionStore.increaseActions.setUnderlier(contextData.fiat, event.target.value, modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
@@ -455,9 +427,9 @@ const IncreaseInputs = ({
         />
         <Input
           disabled={disableActions}
-          value={floor2(Number(wadToDec(modifyPositionStore.slippagePct)) * 100)}
+          value={floor2(Number(wadToDec(modifyPositionStore.increaseState.slippagePct)) * 100)}
           onChange={(event) => {
-            modifyPositionStore.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+            modifyPositionStore.increaseActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
           }}
           step='0.01'
           placeholder='0'
@@ -472,9 +444,9 @@ const IncreaseInputs = ({
       </Grid.Container>
       <Input
         disabled={disableActions}
-        value={floor5(wadToDec(modifyPositionStore.deltaDebt))}
+        value={floor5(wadToDec(modifyPositionStore.increaseState.deltaDebt))}
         onChange={(event) => {
-          modifyPositionStore.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
+          modifyPositionStore.increaseActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
         }}
         placeholder='0'
         inputMode='decimal'
@@ -485,39 +457,125 @@ const IncreaseInputs = ({
         borderWeight='light'
       />
     </Modal.Body>
-  )
+
+    <Spacer y={0.75} />
+    <Card.Divider />
+
+      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
+        <Text b size={'m'}>
+          Swap Preview
+        </Text>
+        <Input
+          readOnly
+          value={
+            modifyPositionStore.formDataLoading
+              ? ' '
+              : floor2(wadToDec(modifyPositionStore.increaseState.deltaCollateral))
+          }
+          placeholder='0'
+          type='string'
+          label={'Collateral to deposit (incl. slippage)'}
+          labelRight={symbol}
+          contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
+          size='sm'
+          status='primary'
+        />
+      </Modal.Body>
+
+      <Spacer y={0.75} />
+      <Card.Divider />
+
+      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
+        <PositionPreview
+          fiat={contextData.fiat}
+          formDataLoading={modifyPositionStore.formDataLoading}
+          positionCollateral={position.collateral}
+          positionNormalDebt={position.normalDebt}
+          estimatedCollateral={modifyPositionStore.increaseState.collateral}
+          estimatedCollateralRatio={modifyPositionStore.increaseState.collRatio}
+          estimatedDebt={modifyPositionStore.increaseState.debt}
+          virtualRate={virtualRate}
+          fairPrice={fairPrice}
+          symbol={symbol}
+        />
+      </Modal.Body>
+    </>
+  );
 }
 
-const DecreaseInputs = ({
+const DecreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
   symbol,
+  underlierSymbol,
 }: {
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   symbol: string,
+  underlierSymbol: string,
 }) => {
   // TODO: select decrease state & actions off store
   const modifyPositionStore = useModifyPositionStore();
 
   return (
-    <Modal.Body>
-      <Text b size={'m'}>
-        Inputs
-      </Text>
-      <Grid.Container
-        gap={0}
-        justify='space-between'
-        wrap='wrap'
-        css={{ marginBottom: '1rem' }}
-      >
+    <>
+      <Modal.Body>
+        <Text b size={'m'}>
+          Inputs
+        </Text>
+        <Grid.Container
+          gap={0}
+          justify='space-between'
+          wrap='wrap'
+          css={{ marginBottom: '1rem' }}
+        >
+          <Input
+            disabled={disableActions}
+            value={floor2(wadToDec(modifyPositionStore.deltaCollateral))}
+            onChange={(event) => {
+              modifyPositionStore.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+            }}
+            placeholder='0'
+            inputMode='decimal'
+            // Bypass type warning from passing a custom component instead of a string
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            label={
+              <InputLabelWithMax
+                label='Collateral to withdraw and swap'
+                onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
+              />
+            }
+            labelRight={symbol}
+            bordered
+            size='sm'
+            borderWeight='light'
+            width={'15rem'}
+          />
+          <Input
+            disabled={disableActions}
+            value={floor2(Number(wadToDec(modifyPositionStore.slippagePct)) * 100)}
+            onChange={(event) => {
+              modifyPositionStore.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
+            }}
+            step='0.01'
+            placeholder='0'
+            inputMode='decimal'
+            label='Slippage'
+            labelRight={'%'}
+            bordered
+            size='sm'
+            borderWeight='light'
+            width='7.5rem'
+          />
+        </Grid.Container>
         <Input
           disabled={disableActions}
-          value={floor2(wadToDec(modifyPositionStore.deltaCollateral))}
+          value={floor5(wadToDec(modifyPositionStore.deltaDebt))}
           onChange={(event) => {
-            modifyPositionStore.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+            modifyPositionStore.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
@@ -526,63 +584,51 @@ const DecreaseInputs = ({
           // @ts-ignore
           label={
             <InputLabelWithMax
-              label='Collateral to withdraw and swap'
-              onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
+              label='FIAT to pay back'
+              onMaxClick={() => modifyPositionStore.setMaxDeltaDebt(contextData.fiat, modifyPositionData)}
             />
           }
-          labelRight={symbol}
+          labelRight={'FIAT'}
           bordered
           size='sm'
           borderWeight='light'
-          width={'15rem'}
         />
+        <Text size={'$sm'}>
+          Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
+        </Text>
+      </Modal.Body>
+
+      <Spacer y={0.75} />
+      <Card.Divider />
+
+      <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
+        <Text b size={'m'}>
+          Swap Preview
+        </Text>
         <Input
-          disabled={disableActions}
-          value={floor2(Number(wadToDec(modifyPositionStore.slippagePct)) * 100)}
-          onChange={(event) => {
-            modifyPositionStore.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
-          }}
-          step='0.01'
+          readOnly
+          value={
+            (modifyPositionStore.formDataLoading)
+              ? ' '
+              : floor2(scaleToDec(modifyPositionStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale))
+          }
           placeholder='0'
-          inputMode='decimal'
-          label='Slippage'
-          labelRight={'%'}
-          bordered
+          type='string'
+          label={'Underliers to withdraw (incl. slippage)'}
+          labelRight={underlierSymbol}
+          contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
-          borderWeight='light'
-          width='7.5rem'
+          status='primary'
         />
-      </Grid.Container>
-      <Input
-        disabled={disableActions}
-        value={floor5(wadToDec(modifyPositionStore.deltaDebt))}
-        onChange={(event) => {
-          modifyPositionStore.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
-        }}
-        placeholder='0'
-        inputMode='decimal'
-        // Bypass type warning from passing a custom component instead of a string
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        label={
-          <InputLabelWithMax
-            label='FIAT to pay back'
-            onMaxClick={() => modifyPositionStore.setMaxDeltaDebt(contextData.fiat, modifyPositionData)}
-          />
-        }
-        labelRight={'FIAT'}
-        bordered
-        size='sm'
-        borderWeight='light'
-      />
-      <Text size={'$sm'}>
-        Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
-      </Text>
-    </Modal.Body>
-  )
+      </Modal.Body>
+
+      <Spacer y={0.75} />
+      <Card.Divider />
+    </>
+  );
 }
 
-const RedeemInputs = ({
+const RedeemForm = ({
   contextData,
   disableActions,
   modifyPositionData,
