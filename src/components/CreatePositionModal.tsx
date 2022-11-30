@@ -91,6 +91,24 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
 
   const hasProxy = proxies.length > 0;
 
+  const renderSummary = () => {
+    if (formStore.createState.deltaCollateral.isZero()) {
+      return null;
+    }
+
+    return (
+      <>
+        <Spacer y={0} />
+        <Text b size={'m'}>Summary</Text>
+        <Text size='0.75rem'>
+          <>
+            Swap <b>{floor2(scaleToDec(formStore.createState.underlier, props.modifyPositionData.collateralType.properties.underlierScale))} {props.modifyPositionData.collateralType.properties.underlierSymbol}</b> for<b> ~{floor2(wadToDec(formStore.createState.deltaCollateral))} {props.modifyPositionData.collateralType.metadata.symbol}</b>. Deposit <b>~{floor2(wadToDec(formStore.createState.deltaCollateral))} {props.modifyPositionData.collateralType.metadata.symbol}</b> as deltaCollateral. Borrow <b>~{floor2(wadToDec(formStore.createState.deltaDebt))} FIAT</b> against the deltaCollateral.
+          </>
+        </Text>
+      </>
+    );
+  }
+
   const renderFormAlerts = () => {
     const formAlerts = [];
 
@@ -329,18 +347,9 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
           size='sm'
           status='primary'
         />
-        {/* <Spacer y={0} />
-          <Text b size={'m'}>Summary</Text>
-          <Text size='0.75rem'>{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
-      <Text size='0.75rem'>{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
-          <Text size='0.75rem'>{(modifyPositionFormData.deltaCollateral.isZero()) ? null : 
-          <>
-            Swap <b>{floor2(scaleToDec(modifyPositionFormData.underlier, modifyPositionData.collateralType.properties.underlierScale))} {modifyPositionData.collateralType.properties.underlierSymbol} </b>
-            for <b>~{floor2(wadToDec(modifyPositionFormData.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b>.
-            Deposit <b>~{floor2(wadToDec(modifyPositionFormData.deltaCollateral))} {modifyPositionData.collateralType.metadata.symbol}</b> as deltaCollateral.
-            Borrow <b>~{floor2(wadToDec(modifyPositionFormData.deltaDebt))} FIAT</b> against the deltaCollateral.
-          </>
-          }</Text> */}
+
+        {/* renderSummary() */}
+
       </Modal.Body>
       <Modal.Footer justify='space-evenly'>
         <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
