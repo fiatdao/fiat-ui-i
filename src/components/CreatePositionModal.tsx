@@ -19,6 +19,7 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 import { commifyToDecimalPlaces, floor2, formatUnixTimestamp } from '../utils';
 import { Alert } from './Alert';
 import { useModifyPositionStore } from '../stores/modifyPositionStore';
+import shallow from 'zustand/shallow';
 
 interface CreatePositionModalProps {
   createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
@@ -49,7 +50,19 @@ export const CreatePositionModal = (props: CreatePositionModalProps) => {
 };
 
 const CreatePositionModalBody = (props: CreatePositionModalProps) => {
-  const formStore = useModifyPositionStore();
+  const formStore = useModifyPositionStore(
+    React.useCallback(
+      (state) => ({
+        createState: state.createState,
+        createActions: state.createActions,
+        formDataLoading: state.formDataLoading,
+        formWarnings: state.formWarnings,
+        formErrors: state.formErrors,
+      }),
+      []
+    ), shallow
+  );
+
   const [rpcError, setRpcError] = React.useState('');
 
   if (
