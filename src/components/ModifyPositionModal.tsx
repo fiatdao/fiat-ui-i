@@ -56,7 +56,6 @@ export const ModifyPositionModal = (props: ModifyPositionModalProps) => {
 
 const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
   const modifyPositionStore = useModifyPositionStore();
-  const [rpcError, setRpcError] = React.useState('');
 
   const matured = React.useMemo(() => {
     const maturity = props.modifyPositionData.collateralType?.properties.maturity.toString();
@@ -75,7 +74,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     return null;
   }
 
-  const { proxies, fiat } = props.contextData;
   const {
     collateralType: {
       metadata: { symbol: symbol, protocol, asset },
@@ -88,31 +86,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     proxyFIATAllowance,
     position,
   } = props.modifyPositionData;
-  const { action: currentTxAction } = props.transactionData;
-
-  const hasProxy = proxies.length > 0;
-
-  const renderFormAlerts = () => {
-    const formAlerts = [];
-
-    if (modifyPositionStore.formWarnings.length !== 0) {
-      modifyPositionStore.formWarnings.map((formWarning, idx) => {
-        formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
-      });
-    }
-
-    if (modifyPositionStore.formErrors.length !== 0) {
-      modifyPositionStore.formErrors.forEach((formError, idx) => {
-        formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
-      });
-    }
-
-    if (rpcError !== '' && rpcError !== 'ACTION_REJECTED') {
-      formAlerts.push(<Alert severity='error' message={rpcError} />);
-    }
-
-    return formAlerts;
-  }
 
   return (
     <>
@@ -187,8 +160,14 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             symbol={symbol}
             underlierSymbol={underlierSymbol}
             position={position}
+            transactionData={props.transactionData}
             virtualRate={virtualRate}
             fairPrice={fairPrice}
+            onClose={props.onClose}
+            buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
+            setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
+            unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
+            
           />
         : modifyPositionStore.mode === Mode.DECREASE
         ? <DecreaseForm
@@ -207,155 +186,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           />
         : null
       }
-
-      <Modal.Footer justify='space-evenly'>
-        {modifyPositionStore.mode === Mode.INCREASE && (
-          <>
-            <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
-            <Switch
-              disabled={props.disableActions || !hasProxy}
-              // Next UI Switch `checked` type is wrong, this is necessary
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(modifyPositionStore.underlier) ?? false}
-              onChange={async () => {
-                if(!modifyPositionStore.underlier.isZero() && underlierAllowance.gte(modifyPositionStore.underlier)) {
-                  try {
-                    setRpcError('');
-                    await props.unsetUnderlierAllowanceForProxy(props.contextData.fiat);
-                  } catch (e: any) {
-                    setRpcError(e.message);
-                  }
-                } else {
-                  try {
-                    setRpcError('');
-                    await props.setUnderlierAllowanceForProxy(props.contextData.fiat, modifyPositionStore.underlier)
-                  } catch (e: any) {
-                    setRpcError(e.message);
-                  }
-                }
-              }}
-              color='primary'
-              icon={
-                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && props.disableActions ? (
-                  <Loading size='xs' />
-                ) : null
-              }
-            />
-          </>
-        )}
-        {(modifyPositionStore.mode === Mode.DECREASE || modifyPositionStore.mode === Mode.REDEEM) && (
-          <>
-            <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
-            <Switch
-              disabled={props.disableActions || !hasProxy}
-              // Next UI Switch `checked` type is wrong, this is necessary
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              checked={() => proxyFIATAllowance?.gt(0) && proxyFIATAllowance?.gte(modifyPositionStore.deltaDebt) ?? false}
-              onChange={async () => {
-                if (modifyPositionStore.deltaDebt.gt(0) && proxyFIATAllowance.gte(modifyPositionStore.deltaDebt)) {
-                  try {
-                    setRpcError('');
-                    await props.unsetFIATAllowanceForProxy(props.contextData.fiat);
-                  } catch (e: any) {
-                    setRpcError(e.message);
-                  }
-                } else {
-                  try {
-                    setRpcError('');
-                    await props.setFIATAllowanceForProxy(props.contextData.fiat, modifyPositionStore.deltaDebt);
-                  } catch (e: any) {
-                    setRpcError(e.message);
-                  }
-                }
-              }}
-              color='primary'
-              icon={
-                ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && props.disableActions ? (
-                  <Loading size='xs' />
-                ) : null
-              }
-            />
-            <Spacer y={3} />
-            {monetaFIATAllowance?.lt(modifyPositionStore.deltaDebt) && (
-              <>
-                <Spacer y={3} />
-                <Button
-                  css={{ minWidth: '100%' }}
-                  disabled={(() => {
-                    if (props.disableActions || !hasProxy) return true;
-                    if (monetaFIATAllowance?.gt(0) && monetaFIATAllowance?.gte(modifyPositionStore.deltaDebt)) return true;
-                    return false;
-                  })()}
-                  icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && props.disableActions)
-                    ? (<Loading size='xs' />)
-                    : null
-                  }
-                  onPress={async () => {
-                    try {
-                      setRpcError('');
-                      await props.setFIATAllowanceForMoneta(props.contextData.fiat);
-                    } catch (e: any) {
-                      setRpcError(e.message);
-                    }
-                  }}
-                >
-                  Approve FIAT for Moneta (One Time Action)
-                </Button>
-              </>
-            )}
-          </>
-        )}
-        { renderFormAlerts() }
-        <Button
-          css={{ minWidth: '100%' }}
-          disabled={(() => {
-            if (props.disableActions || !hasProxy) return true;
-            if (modifyPositionStore.formErrors.length !== 0 || modifyPositionStore.formWarnings.length !== 0) return true;
-            if (modifyPositionStore.mode === Mode.INCREASE) {
-              if (monetaDelegate === false) return true;
-              if (modifyPositionStore.underlier.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
-              if (!modifyPositionStore.underlier.isZero() && underlierAllowance.lt(modifyPositionStore.underlier)) return true;
-            } else if (modifyPositionStore.mode === Mode.DECREASE) {
-              if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
-              if (!modifyPositionStore.deltaDebt.isZero() && monetaFIATAllowance.lt(modifyPositionStore.deltaDebt)) return true;
-            } else if (modifyPositionStore.mode === Mode.REDEEM) {
-              if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
-              if (!modifyPositionStore.deltaDebt.isZero() && monetaFIATAllowance.lt(modifyPositionStore.deltaDebt)) return true;
-            }
-            return false;
-          })()}
-          icon={
-            [
-              'buyCollateralAndModifyDebt',
-              'sellCollateralAndModifyDebt',
-              'redeemCollateralAndModifyDebt',
-            ].includes(currentTxAction || '') && props.disableActions ? (
-              <Loading size='xs' />
-            ) : null
-          }
-          onPress={async () => {
-            try {
-              setRpcError('');
-              if (modifyPositionStore.mode === Mode.INCREASE) {
-                await props.buyCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt, modifyPositionStore.underlier);
-              } else if (modifyPositionStore.mode === Mode.DECREASE) {
-                await props.sellCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt, modifyPositionStore.underlier);
-              } else if (modifyPositionStore.mode === Mode.REDEEM) {
-                await props.redeemCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt);
-              }
-              props.onClose();
-            } catch (e: any) {
-              setRpcError(e.message);
-            }
-          }}
-        >
-          {modifyPositionStore.mode === Mode.INCREASE && 'Increase'}
-          {modifyPositionStore.mode === Mode.DECREASE && 'Decrease'}
-          {modifyPositionStore.mode === Mode.REDEEM && 'Redeem'}
-        </Button>
-      </Modal.Footer>
     </>
   );
 };
@@ -369,6 +199,12 @@ const IncreaseForm = ({
   underlierSymbol,
   virtualRate,
   fairPrice,
+  transactionData,
+  onClose,
+  // TODO: refactor out into react query mutations / store actions
+  buyCollateralAndModifyDebt,
+  setUnderlierAllowanceForProxy,
+  unsetUnderlierAllowanceForProxy,
 }: {
   contextData: any,
   disableActions: boolean,
@@ -378,12 +214,25 @@ const IncreaseForm = ({
   underlierSymbol: string,
   virtualRate: BigNumber,
   fairPrice: BigNumber,
+  transactionData: any;
+  onClose: () => void;
+  // TODO: refactor out into react query mutations / store actions
+  buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
+  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
+  unsetUnderlierAllowanceForProxy: (fiat: any) => any;
 }) => {
+  const [submitError, setSubmitError] = React.useState('');
+
+  const { proxies } = contextData;
+  const hasProxy = proxies.length > 0;
+  const { action: currentTxAction } = transactionData;
+
   const modifyPositionStore = useModifyPositionStore(
     React.useCallback(
       (state) => ({
         increaseState: state.increaseState,
         increaseActions: state.increaseActions,
+        mode: state.mode,
         formDataLoading: state.formDataLoading,
         formWarnings: state.formWarnings,
         formErrors: state.formErrors,
@@ -391,8 +240,29 @@ const IncreaseForm = ({
       []
     ), shallow
   );
-  console.log('formdataloading: ', modifyPositionStore.formDataLoading)
   
+  const renderFormAlerts = () => {
+    const formAlerts = [];
+
+    if (modifyPositionStore.formWarnings.length !== 0) {
+      modifyPositionStore.formWarnings.map((formWarning, idx) => {
+        formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
+      });
+    }
+
+    if (modifyPositionStore.formErrors.length !== 0) {
+      modifyPositionStore.formErrors.forEach((formError, idx) => {
+        formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
+      });
+    }
+
+    if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
+      formAlerts.push(<Alert severity='error' message={submitError} />);
+    }
+
+    return formAlerts;
+  }
+
   return (
     <>
     <Modal.Body>
@@ -499,6 +369,157 @@ const IncreaseForm = ({
           symbol={symbol}
         />
       </Modal.Body>
+
+      <Modal.Footer justify='space-evenly'>
+        {modifyPositionStore.mode === Mode.INCREASE && (
+          <>
+            <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
+            <Switch
+              disabled={disableActions || !hasProxy}
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(modifyPositionStore.underlier) ?? false}
+              onChange={async () => {
+                if(!modifyPositionStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(modifyPositionStore.increaseState.underlier)) {
+                  try {
+                    setSubmitError('');
+                    await unsetUnderlierAllowanceForProxy(contextData.fiat);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                } else {
+                  try {
+                    setSubmitError('');
+                    await setUnderlierAllowanceForProxy(contextData.fiat, modifyPositionStore.increaseState.underlier)
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                }
+              }}
+              color='primary'
+              icon={
+                ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+                  <Loading size='xs' />
+                ) : null
+              }
+            />
+          </>
+        )}
+        {/*(modifyPositionStore.mode === Mode.DECREASE || modifyPositionStore.mode === Mode.REDEEM) && (
+          <>
+            <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
+            <Switch
+              disabled={disableActions || !hasProxy}
+              // Next UI Switch `checked` type is wrong, this is necessary
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              checked={() => proxyFIATAllowance?.gt(0) && proxyFIATAllowance?.gte(modifyPositionStore.deltaDebt) ?? false}
+              onChange={async () => {
+                if (modifyPositionStore.deltaDebt.gt(0) && proxyFIATAllowance.gte(modifyPositionStore.deltaDebt)) {
+                  try {
+                    setSubmitError('');
+                    await props.unsetFIATAllowanceForProxy(props.contextData.fiat);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                } else {
+                  try {
+                    setSubmitError('');
+                    await props.setFIATAllowanceForProxy(props.contextData.fiat, modifyPositionStore.deltaDebt);
+                  } catch (e: any) {
+                    setSubmitError(e.message);
+                  }
+                }
+              }}
+              color='primary'
+              icon={
+                ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && props.disableActions ? (
+                  <Loading size='xs' />
+                ) : null
+              }
+            />
+            <Spacer y={3} />
+            {monetaFIATAllowance?.lt(modifyPositionStore.deltaDebt) && (
+              <>
+                <Spacer y={3} />
+                <Button
+                  css={{ minWidth: '100%' }}
+                  disabled={(() => {
+                    if (props.disableActions || !hasProxy) return true;
+                    if (monetaFIATAllowance?.gt(0) && monetaFIATAllowance?.gte(modifyPositionStore.deltaDebt)) return true;
+                    return false;
+                  })()}
+                  icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && props.disableActions)
+                    ? (<Loading size='xs' />)
+                    : null
+                  }
+                  onPress={async () => {
+                    try {
+                      setSubmitError('');
+                      await props.setFIATAllowanceForMoneta(props.contextData.fiat);
+                    } catch (e: any) {
+                      setSubmitError(e.message);
+                    }
+                  }}
+                >
+                  Approve FIAT for Moneta (One Time Action)
+                </Button>
+              </>
+            )}
+          </>
+          )*/}
+        { renderFormAlerts() }
+        <Button
+          css={{ minWidth: '100%' }}
+          disabled={(() => {
+            if (disableActions || !hasProxy) return true;
+            if (modifyPositionStore.formErrors.length !== 0 || modifyPositionStore.formWarnings.length !== 0) return true;
+            if (modifyPositionStore.mode === Mode.INCREASE) {
+              if (modifyPositionData.monetaDelegate === false) return true;
+              if (modifyPositionStore.increaseState.underlier.isZero() && modifyPositionStore.increaseState.deltaDebt.isZero()) return true;
+              if (!modifyPositionStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.lt(modifyPositionStore.increaseState.underlier)) return true;
+            }
+            /*else if (modifyPositionStore.mode === Mode.DECREASE) {
+              if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
+              if (!modifyPositionStore.deltaDebt.isZero() && monetaFIATAllowance.lt(modifyPositionStore.deltaDebt)) return true;
+            } else if (modifyPositionStore.mode === Mode.REDEEM) {
+              if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
+              if (!modifyPositionStore.deltaDebt.isZero() && monetaFIATAllowance.lt(modifyPositionStore.deltaDebt)) return true;
+              }*/
+            return false;
+          })()}
+          icon={
+            [
+              'buyCollateralAndModifyDebt',
+              'sellCollateralAndModifyDebt',
+              'redeemCollateralAndModifyDebt',
+            ].includes(currentTxAction || '') && disableActions ? (
+              <Loading size='xs' />
+            ) : null
+          }
+          onPress={async () => {
+            try {
+              setSubmitError('');
+              if (modifyPositionStore.mode === Mode.INCREASE) {
+                await buyCollateralAndModifyDebt(modifyPositionStore.increaseState.deltaCollateral, modifyPositionStore.increaseState.deltaDebt, modifyPositionStore.increaseState.underlier);
+              }
+              // else if (modifyPositionStore.mode === Mode.DECREASE) {
+              //   await props.sellCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt, modifyPositionStore.underlier);
+              // } else if (modifyPositionStore.mode === Mode.REDEEM) {
+              //   await props.redeemCollateralAndModifyDebt(modifyPositionStore.deltaCollateral, modifyPositionStore.deltaDebt);
+              // }
+              onClose();
+            } catch (e: any) {
+              setSubmitError(e.message);
+            }
+          }}
+        >
+          {modifyPositionStore.mode === Mode.INCREASE && 'Increase'}
+          {modifyPositionStore.mode === Mode.DECREASE && 'Decrease'}
+          {modifyPositionStore.mode === Mode.REDEEM && 'Redeem'}
+        </Button>
+      </Modal.Footer>
     </>
   );
 }
