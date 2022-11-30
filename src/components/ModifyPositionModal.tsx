@@ -178,9 +178,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
       </Modal.Body>
 
       {
-        modifyPositionStore.mode === Mode.CREATE
-        ? <p>create</p>
-        : modifyPositionStore.mode === Mode.INCREASE
+        modifyPositionStore.mode === Mode.INCREASE
         ? <IncreaseInputs
             contextData={props.contextData}
             disableActions={props.disableActions}
@@ -409,10 +407,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     </>
   );
 };
-
-const CreateInputs = () => {
-  return (<></>)
-}
 
 const IncreaseInputs = ({
   contextData,
