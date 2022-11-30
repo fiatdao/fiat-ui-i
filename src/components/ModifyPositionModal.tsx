@@ -176,6 +176,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             modifyPositionData={props.modifyPositionData}
             symbol={symbol}
             underlierSymbol={underlierSymbol}
+            transactionData={props.transactionData}
+            virtualRate={virtualRate}
+            fairPrice={fairPrice}
+            onClose={props.onClose}
           />
         : modifyPositionStore.mode === Mode.REDEEM
         ? <RedeemForm
@@ -183,6 +187,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             disableActions={props.disableActions}
             modifyPositionData={props.modifyPositionData}
             symbol={symbol}
+            transactionData={props.transactionData}
+            virtualRate={virtualRate}
+            fairPrice={fairPrice}
+            onClose={props.onClose}
           />
         : null
       }
@@ -197,9 +205,9 @@ const IncreaseForm = ({
   position,
   symbol,
   underlierSymbol,
+  transactionData,
   virtualRate,
   fairPrice,
-  transactionData,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   buyCollateralAndModifyDebt,
@@ -214,19 +222,14 @@ const IncreaseForm = ({
   underlierSymbol: string,
   virtualRate: BigNumber,
   fairPrice: BigNumber,
-  transactionData: any;
-  onClose: () => void;
+  transactionData: any,
+  onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
-  buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  unsetUnderlierAllowanceForProxy: (fiat: any) => any;
+  buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any,
+  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
+  unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
   const [submitError, setSubmitError] = React.useState('');
-
-  const { proxies } = contextData;
-  const hasProxy = proxies.length > 0;
-  const { action: currentTxAction } = transactionData;
-
   const modifyPositionStore = useModifyPositionStore(
     React.useCallback(
       (state) => ({
@@ -240,6 +243,9 @@ const IncreaseForm = ({
       []
     ), shallow
   );
+
+  const hasProxy = contextData.proxies.length > 0;
+  const { action: currentTxAction } = transactionData;
   
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -379,7 +385,7 @@ const IncreaseForm = ({
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(modifyPositionStore.underlier) ?? false}
+              checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(modifyPositionStore.increaseState.underlier) ?? false}
               onChange={async () => {
                 if(!modifyPositionStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(modifyPositionStore.increaseState.underlier)) {
                   try {
@@ -530,15 +536,49 @@ const DecreaseForm = ({
   modifyPositionData,
   symbol,
   underlierSymbol,
+  transactionData,
+  virtualRate,
+  fairPrice,
+  onClose,
 }: {
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   symbol: string,
   underlierSymbol: string,
+  transactionData: any,
+  virtualRate: BigNumber,
+  fairPrice: BigNumber,
+  onClose: () => void,
 }) => {
+  const [submitError, setSubmitError] = React.useState('');
   // TODO: select decrease state & actions off store
   const modifyPositionStore = useModifyPositionStore();
+
+  const hasProxy = contextData.proxies.length > 0;
+  const { action: currentTxAction } = transactionData;
+  
+  const renderFormAlerts = () => {
+    const formAlerts = [];
+
+    if (modifyPositionStore.formWarnings.length !== 0) {
+      modifyPositionStore.formWarnings.map((formWarning, idx) => {
+        formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
+      });
+    }
+
+    if (modifyPositionStore.formErrors.length !== 0) {
+      modifyPositionStore.formErrors.forEach((formError, idx) => {
+        formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
+      });
+    }
+
+    if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
+      formAlerts.push(<Alert severity='error' message={submitError} />);
+    }
+
+    return formAlerts;
+  }
 
   return (
     <>
@@ -654,14 +694,48 @@ const RedeemForm = ({
   disableActions,
   modifyPositionData,
   symbol,
+  transactionData,
+  virtualRate,
+  fairPrice,
+  onClose,
 }: {
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
   symbol: string,
+  transactionData: any,
+  virtualRate: BigNumber,
+  fairPrice: BigNumber,
+  onClose: () => void,
 }) => {
+  const [submitError, setSubmitError] = React.useState('');
   // TODO: select redeem state & actions off store
   const modifyPositionStore = useModifyPositionStore();
+
+  const hasProxy = contextData.proxies.length > 0;
+  const { action: currentTxAction } = transactionData;
+  
+  const renderFormAlerts = () => {
+    const formAlerts = [];
+
+    if (modifyPositionStore.formWarnings.length !== 0) {
+      modifyPositionStore.formWarnings.map((formWarning, idx) => {
+        formAlerts.push(<Alert severity='warning' message={formWarning} key={`warn-${idx}`} />);
+      });
+    }
+
+    if (modifyPositionStore.formErrors.length !== 0) {
+      modifyPositionStore.formErrors.forEach((formError, idx) => {
+        formAlerts.push(<Alert severity='error' message={formError} key={`err-${idx}`} />);
+      });
+    }
+
+    if (submitError !== '' && submitError !== 'ACTION_REJECTED') {
+      formAlerts.push(<Alert severity='error' message={submitError} />);
+    }
+
+    return formAlerts;
+  }
 
   return (
     <Modal.Body>
@@ -806,4 +880,3 @@ const PositionPreview = ({
     </>
   );
 }
-
