@@ -197,6 +197,10 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             virtualRate={virtualRate}
             fairPrice={fairPrice}
             onClose={props.onClose}
+            setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
+            unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
+            setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
+            redeemCollateralAndModifyDebt={props.redeemCollateralAndModifyDebt}
           />
         : null
       }
@@ -795,7 +799,7 @@ const DecreaseForm = ({
             if (modifyPositionStore.formErrors.length !== 0 || modifyPositionStore.formWarnings.length !== 0) return true;
             if (modifyPositionStore.mode === Mode.DECREASE) {
               if (modifyPositionStore.decreaseState.deltaCollateral.isZero() && modifyPositionStore.decreaseState.deltaDebt.isZero()) return true;
-              if (!modifyPositionStore.decreaseState.deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance.lt(modifyPositionStore.decreaseState.deltaDebt)) return true;
+              if (!modifyPositionStore.decreaseState.deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(modifyPositionStore.decreaseState.deltaDebt)) return true;
             }
             /*else if (modifyPositionStore.mode === Mode.REDEEM) {
               if (modifyPositionStore.deltaCollateral.isZero() && modifyPositionStore.deltaDebt.isZero()) return true;
@@ -846,6 +850,11 @@ const RedeemForm = ({
   virtualRate,
   fairPrice,
   onClose,
+  // TODO: refactor out into react query mutations / store actions
+  setFIATAllowanceForProxy,
+  unsetFIATAllowanceForProxy,
+  setFIATAllowanceForMoneta,
+  redeemCollateralAndModifyDebt,
 }: {
   contextData: any,
   disableActions: boolean,
@@ -856,6 +865,11 @@ const RedeemForm = ({
   virtualRate: BigNumber,
   fairPrice: BigNumber,
   onClose: () => void,
+  // TODO: refactor out into react query mutations / store actions
+  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
+  setFIATAllowanceForMoneta: (fiat: any) => any;
+  unsetFIATAllowanceForProxy: (fiat: any) => any;
+  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
   // TODO: select redeem state & actions off store
@@ -900,16 +914,16 @@ const RedeemForm = ({
         >
           <Input
             disabled={disableActions}
-            value={floor2(wadToDec(modifyPositionStore.deltaCollateral))}
+            value={floor2(wadToDec(modifyPositionStore.redeemState.deltaCollateral))}
             onChange={(event) => {
-              modifyPositionStore.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
+              modifyPositionStore.redeemActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
             }}
             placeholder='0'
             inputMode='decimal'
             // Bypass type warning from passing a custom component instead of a string
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => modifyPositionStore.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
+            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => modifyPositionStore.redeemActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
             labelRight={symbol}
             bordered
             size='sm'
@@ -919,16 +933,16 @@ const RedeemForm = ({
         </Grid.Container>
         <Input
           disabled={disableActions}
-          value={floor5(wadToDec(modifyPositionStore.deltaDebt))}
+          value={floor5(wadToDec(modifyPositionStore.redeemState.deltaDebt))}
           onChange={(event) => {
-            modifyPositionStore.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
+            modifyPositionStore.redeemActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
           inputMode='decimal'
           // Bypass type warning from passing a custom component instead of a string
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => modifyPositionStore.setMaxDeltaDebt(contextData.fiat, modifyPositionData)} />}
+          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => modifyPositionStore.redeemActions.setMaxDeltaDebt(contextData.fiat, modifyPositionData)} />}
           labelRight={'FIAT'}
           bordered
           size='sm'
@@ -943,24 +957,119 @@ const RedeemForm = ({
       <Card.Divider />
 
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
-        {/*
         <PositionPreview
           fiat={contextData.fiat}
           formDataLoading={modifyPositionStore.formDataLoading}
           positionCollateral={position.collateral}
           positionNormalDebt={position.normalDebt}
           estimatedCollateral={modifyPositionStore.redeemState.collateral}
-          estimatedCollateralRatio={modifyPositionStore.increaseState.collRatio}
+          estimatedCollateralRatio={modifyPositionStore.redeemState.collRatio}
           estimatedDebt={modifyPositionStore.redeemState.debt}
           virtualRate={virtualRate}
           fairPrice={fairPrice}
           symbol={symbol}
         />
-        */}
       </Modal.Body>
 
       <Spacer y={0.75} />
       <Card.Divider />
+
+      <Modal.Footer justify='space-evenly'>
+        <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
+        <Switch
+          disabled={disableActions || !hasProxy}
+          // Next UI Switch `checked` type is wrong, this is necessary
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          checked={() => modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(modifyPositionStore.redeemState.deltaDebt) ?? false}
+          onChange={async () => {
+            if (modifyPositionStore.redeemState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(modifyPositionStore.redeemState.deltaDebt)) {
+              try {
+                setSubmitError('');
+                await unsetFIATAllowanceForProxy(contextData.fiat);
+              } catch (e: any) {
+                setSubmitError(e.message);
+              }
+            } else {
+              try {
+                setSubmitError('');
+                await setFIATAllowanceForProxy(contextData.fiat, modifyPositionStore.redeemState.deltaDebt);
+              } catch (e: any) {
+                setSubmitError(e.message);
+              }
+            }
+          }}
+          color='primary'
+          icon={
+            ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+              <Loading size='xs' />
+          ) : null
+          }
+        />
+        <Spacer y={3} />
+        {modifyPositionData.monetaFIATAllowance?.lt(modifyPositionStore.redeemState.deltaDebt) && (
+          <>
+            <Spacer y={3} />
+            <Button
+              css={{ minWidth: '100%' }}
+              disabled={(() => {
+                if (disableActions || !hasProxy) return true;
+                if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(modifyPositionStore.redeemState.deltaDebt)) return true;
+                return false;
+              })()}
+              icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions)
+                ? (<Loading size='xs' />)
+                : null
+              }
+              onPress={async () => {
+                try {
+                  setSubmitError('');
+                  await setFIATAllowanceForMoneta(contextData.fiat);
+                } catch (e: any) {
+                  setSubmitError(e.message);
+                }
+              }}
+            >
+              Approve FIAT for Moneta (One Time Action)
+            </Button>
+          </>
+        )}
+        { renderFormAlerts() }
+        <Button
+          css={{ minWidth: '100%' }}
+          disabled={(() => {
+            if (disableActions || !hasProxy) return true;
+            if (modifyPositionStore.formErrors.length !== 0 || modifyPositionStore.formWarnings.length !== 0) return true;
+            if (modifyPositionStore.mode === Mode.REDEEM) {
+              if (modifyPositionStore.redeemState.deltaCollateral.isZero() && modifyPositionStore.redeemState.deltaDebt.isZero()) return true;
+              if (!modifyPositionStore.redeemState.deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(modifyPositionStore.redeemState.deltaDebt)) return true;
+            }
+            return false;
+          })()}
+          icon={
+            [
+              'buyCollateralAndModifyDebt',
+              'sellCollateralAndModifyDebt',
+              'redeemCollateralAndModifyDebt',
+            ].includes(currentTxAction || '') && disableActions ? (
+              <Loading size='xs' />
+            ) : null
+          }
+          onPress={async () => {
+            try {
+              setSubmitError('');
+              if (modifyPositionStore.mode === Mode.REDEEM) {
+                await redeemCollateralAndModifyDebt(modifyPositionStore.redeemState.deltaCollateral, modifyPositionStore.redeemState.deltaDebt);
+              }
+              onClose();
+            } catch (e: any) {
+              setSubmitError(e.message);
+            }
+          }}
+        >
+          {modifyPositionStore.mode === Mode.REDEEM && 'Redeem'}
+        </Button>
+      </Modal.Footer>
     </>
   )
 }
