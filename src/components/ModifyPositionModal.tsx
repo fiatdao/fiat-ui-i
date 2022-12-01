@@ -84,7 +84,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
           <br />
           <Text b size={16}>{`${props.modifyPositionData.protocol} - ${props.modifyPositionData.asset}`}</Text>
           <br />
-          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.maturity)}`}</Text>
+          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType?.properties.maturity)}`}</Text>
         </Text>
       </Modal.Header>
       <Modal.Body>
@@ -379,8 +379,10 @@ const IncreaseForm = ({
             }
           />
         </>
+
         { renderFormAlerts() }
         <Spacer y={3} />
+
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
