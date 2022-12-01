@@ -346,42 +346,41 @@ const IncreaseForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <>
-          <Text size={'0.875rem'}>Approve {modifyPositionData.collateralType.properties.underlierSymbol}</Text>
-          <Switch
-            disabled={disableActions || !hasProxy}
-            // Next UI Switch `checked` type is wrong, this is necessary
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(modifyPositionStore.increaseState.underlier) ?? false}
-            onChange={async () => {
-              if(!modifyPositionStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(modifyPositionStore.increaseState.underlier)) {
-                try {
-                  setSubmitError('');
-                  await unsetUnderlierAllowanceForProxy(contextData.fiat);
-                } catch (e: any) {
-                  setSubmitError(e.message);
-                }
-              } else {
-                try {
-                  setSubmitError('');
-                  await setUnderlierAllowanceForProxy(contextData.fiat, modifyPositionStore.increaseState.underlier)
-                } catch (e: any) {
-                  setSubmitError(e.message);
-                }
+        <Text size={'0.875rem'}>Approve {modifyPositionData.collateralType.properties.underlierSymbol}</Text>
+        <Switch
+          disabled={disableActions || !hasProxy}
+          // Next UI Switch `checked` type is wrong, this is necessary
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          checked={() => modifyPositionData.underlierAllowance?.gt(0) && modifyPositionData.underlierAllowance?.gte(modifyPositionStore.increaseState.underlier) ?? false}
+          onChange={async () => {
+            if(!modifyPositionStore.increaseState.underlier.isZero() && modifyPositionData.underlierAllowance.gte(modifyPositionStore.increaseState.underlier)) {
+              try {
+                setSubmitError('');
+                await unsetUnderlierAllowanceForProxy(contextData.fiat);
+              } catch (e: any) {
+                setSubmitError(e.message);
               }
-            }}
-            color='primary'
-            icon={
-              ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-                <Loading size='xs' />
-              ) : null
+            } else {
+              try {
+                setSubmitError('');
+                await setUnderlierAllowanceForProxy(contextData.fiat, modifyPositionStore.increaseState.underlier)
+              } catch (e: any) {
+                setSubmitError(e.message);
+              }
             }
-          />
-        </>
+          }}
+          color='primary'
+          icon={
+            ['setUnderlierAllowanceForProxy', 'unsetUnderlierAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+              <Loading size='xs' />
+            ) : null
+          }
+        />
+
+        <Spacer y={3} />
 
         { renderFormAlerts() }
-        <Spacer y={3} />
 
         <Button
           css={{ minWidth: '100%' }}
@@ -603,7 +602,6 @@ const DecreaseForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-        <>
           <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
           <Switch
             disabled={disableActions || !hasProxy}
@@ -635,7 +633,9 @@ const DecreaseForm = ({
               ) : null
             }
           />
+
           <Spacer y={3} />
+
           {modifyPositionData.monetaFIATAllowance?.lt(modifyPositionStore.decreaseState.deltaDebt) && (
             <>
               <Spacer y={3} />
@@ -663,8 +663,9 @@ const DecreaseForm = ({
               </Button>
             </>
           )}
-        </>
+
         { renderFormAlerts() }
+
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
@@ -865,7 +866,9 @@ const RedeemForm = ({
           ) : null
           }
         />
+
         <Spacer y={3} />
+
         {modifyPositionData.monetaFIATAllowance?.lt(modifyPositionStore.redeemState.deltaDebt) && (
           <>
             <Spacer y={3} />
@@ -893,7 +896,9 @@ const RedeemForm = ({
             </Button>
           </>
         )}
+
         { renderFormAlerts() }
+
         <Button
           css={{ minWidth: '100%' }}
           disabled={(() => {
