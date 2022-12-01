@@ -13,7 +13,7 @@ export const enum Mode {
 }
 
 /// A store for setting and getting form values to create and manage positions.
-interface ModifyPositionState {
+interface BorrowState {
   mode: Mode; // [deposit, withdraw, redeem]
   formDataLoading: boolean;
   formWarnings: string[];
@@ -58,7 +58,7 @@ interface ModifyPositionState {
   };
 }
 
-interface ModifyPositionActions {
+interface BorrowActions {
   setMode: (mode: Mode) => void;
   setFormDataLoading: (isLoading: boolean) => void;
   reset: () => void;
@@ -216,7 +216,7 @@ const initialState = {
   },
 };
 
-export const useModifyPositionStore = create<ModifyPositionState & ModifyPositionActions>()((set, get) => ({
+export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) => ({
     ...initialState,
 
     /*
