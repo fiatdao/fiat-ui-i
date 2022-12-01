@@ -246,7 +246,7 @@ const IncreaseForm = ({
       </Text>
       {modifyPositionData.underlierBalance && (
         <Text size={'$sm'}>
-          Wallet: {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {modifyPositionData.collateralType.metadata.underlierSymbol}
+          Wallet: {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {modifyPositionData.collateralType.properties.underlierSymbol}
         </Text>
       )}
       <Grid.Container
@@ -264,7 +264,7 @@ const IncreaseForm = ({
           }}
           placeholder='0'
           inputMode='decimal'
-          labelRight={modifyPositionData.collateralType.metadata.underlierSymbol}
+          labelRight={modifyPositionData.collateralType.properties.underlierSymbol}
           bordered
           size='sm'
           borderWeight='light'
@@ -347,7 +347,7 @@ const IncreaseForm = ({
 
       <Modal.Footer justify='space-evenly'>
         <>
-          <Text size={'0.875rem'}>Approve {modifyPositionData.collateralType.metadata.underlierSymbol}</Text>
+          <Text size={'0.875rem'}>Approve {modifyPositionData.collateralType.properties.underlierSymbol}</Text>
           <Switch
             disabled={disableActions || !hasProxy}
             // Next UI Switch `checked` type is wrong, this is necessary
@@ -577,7 +577,7 @@ const DecreaseForm = ({
           placeholder='0'
           type='string'
           label={'Underliers to withdraw (incl. slippage)'}
-          labelRight={modifyPositionData.collateralType.metadata.underlierSymbol}
+          labelRight={modifyPositionData.collateralType.properties.underlierSymbol}
           contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
@@ -601,9 +601,6 @@ const DecreaseForm = ({
           symbol={modifyPositionData.collateralType.metadata.symbol}
         />
       </Modal.Body>
-
-      <Spacer y={0.75} />
-      <Card.Divider />
 
       <Modal.Footer justify='space-evenly'>
         <>
@@ -835,9 +832,6 @@ const RedeemForm = ({
           symbol={modifyPositionData.collateralType.metadata.symbol}
         />
       </Modal.Body>
-
-      <Spacer y={0.75} />
-      <Card.Divider />
 
       <Modal.Footer justify='space-evenly'>
         <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
