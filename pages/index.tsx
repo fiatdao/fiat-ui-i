@@ -10,12 +10,12 @@ import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
-import { ModifyPositionModal } from '../src/components/ModifyPositionModal';
+import { BorrowModal } from '../src/components/BorrowModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
 import * as userActions from '../src/actions';
-import { useModifyPositionStore } from '../src/stores/modifyPositionStore';
+import { useBorrowStore } from '../src/stores/borrowStore';
 import useStore from '../src/stores/useStore';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
@@ -55,7 +55,7 @@ const Home: NextPage = () => {
   }), []) 
 
   // Only select necessary actions off of the store to minimize re-renders
-  const modifyPositionStore = useModifyPositionStore(
+  const borrowStore = useBorrowStore(
     React.useCallback(
       (state) => ({
         reset: state.reset,
@@ -64,6 +64,7 @@ const Home: NextPage = () => {
     ), shallow
   );
 
+  const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
   const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
@@ -242,7 +243,7 @@ const Home: NextPage = () => {
       });
     })();
 
-  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, modifyPositionStore]);
+  }, [connector, contextData, collateralTypesData, positionsData, selectedCollateralTypeId, selectedPositionId, modifyPositionData, borrowStore]);
 
   const sendTransaction = async (
     fiat: any, useProxy: boolean, action: string, contract: ethers.Contract, method: string, ...args: any[]
@@ -313,15 +314,15 @@ const Home: NextPage = () => {
   }
 
   const setFIATAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
-    const { moneta, fiat: token } = fiat.getContracts();
+    const { fiat: token } = fiat.getContracts();
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = amount.add(WAD);
     const response = await sendTransaction(
       fiat, false, 'setFIATAllowanceForProxy', token, 'approve', contextData.proxies[0], allowance
     );
     addRecentTransaction({ hash: response.transactionHash, description: 'Set  FIAT allowance for Proxy' });
-    const monetaFIATAllowance = await token.allowance(contextData.proxies[0], moneta.address)
-    setModifyPositionData({ ...modifyPositionData, monetaFIATAllowance });
+    const proxyFIATAllowance = await token.allowance(contextData.user, contextData.proxies[0]);
+    setModifyPositionData({ ...modifyPositionData, proxyFIATAllowance });
   }
 
   const unsetFIATAllowanceForProxy = async (fiat: any) => {
@@ -422,6 +423,13 @@ const Home: NextPage = () => {
     }
   }
 
+  // Cycle the first page render to allow styles to load
+  React.useEffect(() => {
+    setInitialPageLoad(false);
+  }, []);
+
+  if (initialPageLoad) return null;
+
   return (
     <div>
       <HeaderBar 
@@ -430,7 +438,7 @@ const Home: NextPage = () => {
         disableActions={disableActions}
         createProxy={createProxy}
       />
-      <Container>
+      <Container lg>
         {
           positionsData === null || positionsData.length === 0
             ? null
@@ -450,12 +458,12 @@ const Home: NextPage = () => {
             )
         }
       </Container>
-      <Container>
+      <Container lg>
         <CollateralTypesTable
           collateralTypesData={collateralTypesData}
           positionsData={positionsData}
           onSelectCollateralType={(collateralTypeId) => {
-            // If user has an existing position for the collateral type then open ModifyPositionModal instead
+            // If user has an existing position for the collateral type then open BorrowModal instead
             const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
             const positionData = getPositionData(positionsData, vault, tokenId, contextData.proxies[0]);
             if (positionData !== undefined) {
@@ -483,11 +491,11 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          modifyPositionStore.reset();
+          borrowStore.reset();
         }}
       />
 
-      <ModifyPositionModal
+      <BorrowModal
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         contextData={contextData}
         disableActions={disableActions}
@@ -507,7 +515,7 @@ const Home: NextPage = () => {
         onClose={() => {
           setSelectedPositionId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
-          modifyPositionStore.reset();
+          borrowStore.reset();
         }}
       />
       <Spacer />
