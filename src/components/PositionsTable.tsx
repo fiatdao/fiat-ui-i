@@ -7,6 +7,7 @@ import {
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
 } from '../utils';
 import { ethers } from 'ethers';
+import useStore from '../stores/useStore';
 
 interface PositionsTableProps {
   contextData: any,
@@ -21,6 +22,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
     column: 'Maturity',
     direction: 'descending'
   });
+  const store = useStore();
 
   React.useEffect(() => {
     const data = [...props.positionsData]
@@ -103,7 +105,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
-              const collRatio = props.contextData.fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
+              const collRatio = store.fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
