@@ -602,67 +602,67 @@ const DecreaseForm = ({
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
-          <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
-          <Switch
-            disabled={disableActions || !hasProxy}
-            // Next UI Switch `checked` type is wrong, this is necessary
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            checked={() => modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt) ?? false}
-            onChange={async () => {
-              if (borrowStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.decreaseState.deltaDebt)) {
-                try {
-                  setSubmitError('');
-                  await unsetFIATAllowanceForProxy(contextData.fiat);
-                } catch (e: any) {
-                  setSubmitError(e.message);
-                }
-              } else {
-                try {
-                  setSubmitError('');
-                  await setFIATAllowanceForProxy(contextData.fiat, borrowStore.decreaseState.deltaDebt);
-                } catch (e: any) {
-                  setSubmitError(e.message);
-                }
+        <Text size={'0.875rem'}>Approve FIAT for Proxy</Text>
+        <Switch
+          disabled={disableActions || !hasProxy}
+          // Next UI Switch `checked` type is wrong, this is necessary
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt) ?? false)}
+          onChange={async () => {
+            if (borrowStore.decreaseState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.decreaseState.deltaDebt)) {
+              try {
+                setSubmitError('');
+                await unsetFIATAllowanceForProxy(contextData.fiat);
+              } catch (e: any) {
+                setSubmitError(e.message);
               }
-            }}
-            color='primary'
-            icon={
-              ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
-                <Loading size='xs' />
-              ) : null
+            } else {
+              try {
+                setSubmitError('');
+                await setFIATAllowanceForProxy(contextData.fiat, borrowStore.decreaseState.deltaDebt);
+              } catch (e: any) {
+                setSubmitError(e.message);
+              }
             }
-          />
+          }}
+          color='primary'
+          icon={
+            ['setFIATAllowanceForProxy', 'unsetFIATAllowanceForProxy'].includes(currentTxAction || '') && disableActions ? (
+              <Loading size='xs' />
+            ) : null
+          }
+        />
 
-          <Spacer y={3} />
+        <Spacer y={3} />
 
-          {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.decreaseState.deltaDebt) && (
-            <>
-              <Spacer y={3} />
-              <Button
-                css={{ minWidth: '100%' }}
-                disabled={(() => {
-                  if (disableActions || !hasProxy) return true;
-                  if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt)) return true;
-                  return false;
-                })()}
-                icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions)
-                  ? (<Loading size='xs' />)
-                  : null
+        {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.decreaseState.deltaDebt) && (
+          <>
+            <Spacer y={3} />
+            <Button
+              css={{ minWidth: '100%' }}
+              disabled={(() => {
+                if (disableActions || !hasProxy) return true;
+                if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.decreaseState.deltaDebt)) return true;
+                return false;
+              })()}
+              icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions)
+                ? (<Loading size='xs' />)
+                : null
+              }
+              onPress={async () => {
+                try {
+                  setSubmitError('');
+                  await setFIATAllowanceForMoneta(contextData.fiat);
+                } catch (e: any) {
+                  setSubmitError(e.message);
                 }
-                onPress={async () => {
-                  try {
-                    setSubmitError('');
-                    await setFIATAllowanceForMoneta(contextData.fiat);
-                  } catch (e: any) {
-                    setSubmitError(e.message);
-                  }
-                }}
-              >
-                Approve FIAT for Moneta (One Time Action)
-              </Button>
-            </>
-          )}
+              }}
+            >
+              Approve FIAT for Moneta (One Time Action)
+            </Button>
+          </>
+        )}
 
         { renderFormAlerts() }
 
@@ -841,7 +841,7 @@ const RedeemForm = ({
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.redeemState.deltaDebt) ?? false}
+          checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.redeemState.deltaDebt) ?? false)}
           onChange={async () => {
             if (borrowStore.redeemState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.redeemState.deltaDebt)) {
               try {

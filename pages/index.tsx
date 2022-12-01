@@ -318,15 +318,15 @@ const Home: NextPage = () => {
   }
 
   const setFIATAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
-    const { moneta, fiat: token } = fiat.getContracts();
+    const { fiat: token } = fiat.getContracts();
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
     const allowance = amount.add(WAD);
     const response = await sendTransaction(
       fiat, false, 'setFIATAllowanceForProxy', token, 'approve', contextData.proxies[0], allowance
     );
     addRecentTransaction({ hash: response.transactionHash, description: 'Set  FIAT allowance for Proxy' });
-    const monetaFIATAllowance = await token.allowance(contextData.proxies[0], moneta.address)
-    setModifyPositionData({ ...modifyPositionData, monetaFIATAllowance });
+    const proxyFIATAllowance = await token.allowance(contextData.user, contextData.proxies[0]);
+    setModifyPositionData({ ...modifyPositionData, proxyFIATAllowance });
   }
 
   const unsetFIATAllowanceForProxy = async (fiat: any) => {
