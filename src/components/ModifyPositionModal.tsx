@@ -74,19 +74,6 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
     return null;
   }
 
-  const {
-    collateralType: {
-      metadata: { symbol: symbol, protocol, asset },
-      properties: { underlierScale, underlierSymbol, maturity },
-      state: { codex: { virtualRate }, collybus: { fairPrice }}
-    },
-    underlierAllowance,
-    monetaDelegate,
-    monetaFIATAllowance,
-    proxyFIATAllowance,
-    position,
-  } = props.modifyPositionData;
-
   return (
     <>
       <Modal.Header>
@@ -95,9 +82,9 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             Modify Position
           </Text>
           <br />
-          <Text b size={16}>{`${protocol} - ${asset}`}</Text>
+          <Text b size={16}>{`${props.modifyPositionData.protocol} - ${props.modifyPositionData.asset}`}</Text>
           <br />
-          <Text b size={14}>{`${formatUnixTimestamp(maturity)}`}</Text>
+          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.maturity)}`}</Text>
         </Text>
       </Modal.Header>
       <Modal.Body>
@@ -154,12 +141,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             contextData={props.contextData}
             disableActions={props.disableActions}
             modifyPositionData={props.modifyPositionData}
-            symbol={symbol}
-            underlierSymbol={underlierSymbol}
-            position={position}
             transactionData={props.transactionData}
-            virtualRate={virtualRate}
-            fairPrice={fairPrice}
             onClose={props.onClose}
             buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
             setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
@@ -171,12 +153,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             contextData={props.contextData}
             disableActions={props.disableActions}
             modifyPositionData={props.modifyPositionData}
-            symbol={symbol}
-            underlierSymbol={underlierSymbol}
-            position={position}
             transactionData={props.transactionData}
-            virtualRate={virtualRate}
-            fairPrice={fairPrice}
             onClose={props.onClose}
             setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
             unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
@@ -188,11 +165,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             contextData={props.contextData}
             disableActions={props.disableActions}
             modifyPositionData={props.modifyPositionData}
-            symbol={symbol}
-            position={position}
             transactionData={props.transactionData}
-            virtualRate={virtualRate}
-            fairPrice={fairPrice}
             onClose={props.onClose}
             setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
             unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
@@ -209,12 +182,7 @@ const IncreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
-  position,
-  symbol,
-  underlierSymbol,
   transactionData,
-  virtualRate,
-  fairPrice,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   buyCollateralAndModifyDebt,
@@ -224,11 +192,6 @@ const IncreaseForm = ({
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
-  position: any,
-  symbol: string,
-  underlierSymbol: string,
-  virtualRate: BigNumber,
-  fairPrice: BigNumber,
   transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
@@ -283,7 +246,7 @@ const IncreaseForm = ({
       </Text>
       {modifyPositionData.underlierBalance && (
         <Text size={'$sm'}>
-          Wallet: {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {underlierSymbol}
+          Wallet: {commifyToDecimalPlaces(modifyPositionData.underlierBalance, modifyPositionData.collateralType.properties.underlierScale, 2)} {modifyPositionData.collateralType.metadata.underlierSymbol}
         </Text>
       )}
       <Grid.Container
@@ -301,7 +264,7 @@ const IncreaseForm = ({
           }}
           placeholder='0'
           inputMode='decimal'
-          labelRight={underlierSymbol}
+          labelRight={modifyPositionData.collateralType.metadata.underlierSymbol}
           bordered
           size='sm'
           borderWeight='light'
@@ -357,7 +320,7 @@ const IncreaseForm = ({
           placeholder='0'
           type='string'
           label={'Collateral to deposit (incl. slippage)'}
-          labelRight={symbol}
+          labelRight={modifyPositionData.collateralType.metadata.symbol}
           contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
@@ -371,20 +334,20 @@ const IncreaseForm = ({
         <PositionPreview
           fiat={contextData.fiat}
           formDataLoading={modifyPositionStore.formDataLoading}
-          positionCollateral={position.collateral}
-          positionNormalDebt={position.normalDebt}
+          positionCollateral={modifyPositionData.position.collateral}
+          positionNormalDebt={modifyPositionData.position.normalDebt}
           estimatedCollateral={modifyPositionStore.increaseState.collateral}
           estimatedCollateralRatio={modifyPositionStore.increaseState.collRatio}
           estimatedDebt={modifyPositionStore.increaseState.debt}
-          virtualRate={virtualRate}
-          fairPrice={fairPrice}
-          symbol={symbol}
+          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
+          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
+          symbol={modifyPositionData.collateralType.metadata.symbol}
         />
       </Modal.Body>
 
       <Modal.Footer justify='space-evenly'>
         <>
-          <Text size={'0.875rem'}>Approve {underlierSymbol}</Text>
+          <Text size={'0.875rem'}>Approve {modifyPositionData.collateralType.metadata.underlierSymbol}</Text>
           <Switch
             disabled={disableActions || !hasProxy}
             // Next UI Switch `checked` type is wrong, this is necessary
@@ -458,12 +421,7 @@ const DecreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
-  position,
-  symbol,
-  underlierSymbol,
   transactionData,
-  virtualRate,
-  fairPrice,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy,
@@ -474,12 +432,7 @@ const DecreaseForm = ({
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
-  position: any,
-  symbol: string,
-  underlierSymbol: string,
   transactionData: any,
-  virtualRate: BigNumber,
-  fairPrice: BigNumber,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
@@ -545,7 +498,7 @@ const DecreaseForm = ({
                 onMaxClick={() => modifyPositionStore.decreaseActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
               />
             }
-            labelRight={symbol}
+            labelRight={modifyPositionData.collateralType.metadata.symbol}
             bordered
             size='sm'
             borderWeight='light'
@@ -612,7 +565,7 @@ const DecreaseForm = ({
           placeholder='0'
           type='string'
           label={'Underliers to withdraw (incl. slippage)'}
-          labelRight={underlierSymbol}
+          labelRight={modifyPositionData.collateralType.metadata.underlierSymbol}
           contentLeft={modifyPositionStore.formDataLoading ? <Loading size='xs' /> : null}
           size='sm'
           status='primary'
@@ -626,14 +579,14 @@ const DecreaseForm = ({
         <PositionPreview
           fiat={contextData.fiat}
           formDataLoading={modifyPositionStore.formDataLoading}
-          positionCollateral={position.collateral}
-          positionNormalDebt={position.normalDebt}
+          positionCollateral={modifyPositionData.position.collateral}
+          positionNormalDebt={modifyPositionData.position.normalDebt}
           estimatedCollateral={modifyPositionStore.decreaseState.collateral}
           estimatedCollateralRatio={modifyPositionStore.decreaseState.collRatio}
           estimatedDebt={modifyPositionStore.decreaseState.debt}
-          virtualRate={virtualRate}
-          fairPrice={fairPrice}
-          symbol={symbol}
+          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
+          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
+          symbol={modifyPositionData.collateralType.metadata.symbol}
         />
       </Modal.Body>
 
@@ -742,11 +695,7 @@ const RedeemForm = ({
   contextData,
   disableActions,
   modifyPositionData,
-  position,
-  symbol,
   transactionData,
-  virtualRate,
-  fairPrice,
   onClose,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy,
@@ -757,11 +706,7 @@ const RedeemForm = ({
   contextData: any,
   disableActions: boolean,
   modifyPositionData: any,
-  position: any,
-  symbol: string,
   transactionData: any,
-  virtualRate: BigNumber,
-  fairPrice: BigNumber,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
@@ -822,7 +767,7 @@ const RedeemForm = ({
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => modifyPositionStore.redeemActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
-            labelRight={symbol}
+            labelRight={modifyPositionData.collateralType.metadata.symbol}
             bordered
             size='sm'
             borderWeight='light'
@@ -858,14 +803,14 @@ const RedeemForm = ({
         <PositionPreview
           fiat={contextData.fiat}
           formDataLoading={modifyPositionStore.formDataLoading}
-          positionCollateral={position.collateral}
-          positionNormalDebt={position.normalDebt}
+          positionCollateral={modifyPositionData.position.collateral}
+          positionNormalDebt={modifyPositionData.position.normalDebt}
           estimatedCollateral={modifyPositionStore.redeemState.collateral}
           estimatedCollateralRatio={modifyPositionStore.redeemState.collRatio}
           estimatedDebt={modifyPositionStore.redeemState.debt}
-          virtualRate={virtualRate}
-          fairPrice={fairPrice}
-          symbol={symbol}
+          virtualRate={modifyPositionData.collateralType.state.codex.virtualRate}
+          fairPrice={modifyPositionData.collateralType.state.collybus.fairPrice}
+          symbol={modifyPositionData.collateralType.metadata.symbol}
         />
       </Modal.Body>
 
