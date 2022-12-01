@@ -82,7 +82,7 @@ const ModifyPositionModalBody = (props: ModifyPositionModalProps) => {
             Modify Position
           </Text>
           <br />
-          <Text b size={16}>{`${props.modifyPositionData.protocol} - ${props.modifyPositionData.asset}`}</Text>
+          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
           <br />
           <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType?.properties.maturity)}`}</Text>
         </Text>
