@@ -441,8 +441,18 @@ const DecreaseForm = ({
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
-  // TODO: select decrease state & actions off store
-  const modifyPositionStore = useModifyPositionStore();
+  const modifyPositionStore = useModifyPositionStore(
+    React.useCallback(
+      (state) => ({
+        decreaseState: state.decreaseState,
+        decreaseActions: state.decreaseActions,
+        formDataLoading: state.formDataLoading,
+        formWarnings: state.formWarnings,
+        formErrors: state.formErrors,
+      }),
+      []
+    ), shallow
+  );
 
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
@@ -715,8 +725,18 @@ const RedeemForm = ({
   redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
-  // TODO: select redeem state & actions off store
-  const modifyPositionStore = useModifyPositionStore();
+  const modifyPositionStore = useModifyPositionStore(
+    React.useCallback(
+      (state) => ({
+        redeemState: state.redeemState,
+        redeemActions: state.redeemActions,
+        formDataLoading: state.formDataLoading,
+        formWarnings: state.formWarnings,
+        formErrors: state.formErrors,
+      }),
+      []
+    ), shallow
+  );
 
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
