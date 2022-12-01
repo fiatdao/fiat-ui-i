@@ -57,8 +57,6 @@ const Home: NextPage = () => {
   const modifyPositionStore = useModifyPositionStore(
     React.useCallback(
       (state) => ({
-        setFormDataLoading: state.setFormDataLoading,
-        calculatePositionValuesAfterAction: state.calculatePositionValuesAfterAction,
         reset: state.reset,
       }),
       []
@@ -215,9 +213,6 @@ const Home: NextPage = () => {
       position = getPositionData(positionsData, vault, tokenId, owner);
     }
     const data = { ...modifyPositionData, collateralType, position };
-
-    modifyPositionStore.setFormDataLoading(true);
-    modifyPositionStore.calculatePositionValuesAfterAction(contextData.fiat, data, selectedCollateralTypeId ?? undefined);
 
     setModifyPositionData({...data});
 
