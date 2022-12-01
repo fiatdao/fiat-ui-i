@@ -12,7 +12,7 @@ import {
   Text,
 } from '@nextui-org/react';
 import { BigNumber, ethers } from 'ethers';
-import { scaleToDec, wadToDec } from '@fiatdao/sdk';
+import { computeCollateralizationRatio, normalDebtToDebt, scaleToDec, wadToDec } from '@fiatdao/sdk';
 
 import { commifyToDecimalPlaces, floor2, floor5, formatUnixTimestamp } from '../utils';
 import { TransactionStatus } from '../../pages';
@@ -1014,11 +1014,11 @@ const PositionPreview = ({
         readOnly
         value={(formDataLoading)
           ? ' '
-          : `${floor5(wadToDec(fiat.normalDebtToDebt(positionNormalDebt, virtualRate)))} → ${floor5(wadToDec(estimatedDebt))}`
+          : `${floor5(wadToDec(normalDebtToDebt(positionNormalDebt, virtualRate)))} → ${floor5(wadToDec(estimatedDebt))}`
         }
         placeholder='0'
         type='string'
-        label={`Debt (before: ${floor5(wadToDec(fiat.normalDebtToDebt(positionNormalDebt, virtualRate)))} FIAT)`}
+        label={`Debt (before: ${floor5(wadToDec(normalDebtToDebt(positionNormalDebt, virtualRate)))} FIAT)`}
         labelRight={'FIAT'}
         contentLeft={formDataLoading ? <Loading size='xs' /> : null}
         size='sm'
@@ -1028,7 +1028,7 @@ const PositionPreview = ({
         readOnly
         value={(() => {
           if (formDataLoading) return ' ';
-          let collRatioBefore = fiat.computeCollateralizationRatio(
+          let collRatioBefore = computeCollateralizationRatio(
             positionCollateral, fairPrice, positionNormalDebt, virtualRate
           );
           collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
@@ -1041,7 +1041,7 @@ const PositionPreview = ({
         type='string'
         label={
           `Collateralization Ratio (before: ${(() => {
-          const collRatio = fiat.computeCollateralizationRatio(
+          const collRatio = computeCollateralizationRatio(
             positionCollateral, fairPrice, positionNormalDebt, virtualRate
           );
           if (collRatio.eq(ethers.constants.MaxUint256)) return '∞'

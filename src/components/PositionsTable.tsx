@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
-import { WAD, wadToDec } from '@fiatdao/sdk';
+import { computeCollateralizationRatio, WAD, wadToDec } from '@fiatdao/sdk';
 
 import {
   encodePositionId, floor2, floor4, formatUnixTimestamp, getCollateralTypeData,
@@ -103,7 +103,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
-              const collRatio = props.contextData.fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
+              const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (

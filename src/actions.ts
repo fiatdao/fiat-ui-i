@@ -1,4 +1,4 @@
-import { decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
+import { debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { BigNumber, Contract } from 'ethers';
 
 export const underlierToCollateralToken = async (
@@ -197,7 +197,7 @@ export const buildModifyCollateralAndDebtArgs = (
   const { properties } = collateralTypeData;
 
   let deltaNormalDebt = addDeltaNormalBuffer(
-    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+    debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
   ));
   if (position.normalDebt.add(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt.mul(-1);
 
@@ -236,7 +236,7 @@ export const buildBuyCollateralAndModifyDebtArgs = (
   const { properties } = collateralTypeData;
 
   const deltaNormalDebt = addDeltaNormalBuffer(
-    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+    debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
   ));
   const tokenAmount = wadToScale(deltaCollateral, properties.tokenScale);
 
@@ -361,7 +361,7 @@ export const buildSellCollateralAndModifyDebtArgs = (
   const { properties } = collateralTypeData;
 
   let deltaNormalDebt = addDeltaNormalBuffer(
-    contextData.fiat.debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
+    debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate
   ));
   if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
   deltaNormalDebt = deltaNormalDebt.mul(-1);
@@ -487,8 +487,7 @@ export const buildRedeemCollateralAndModifyDebtArgs = (contextData: any,
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
 
-  let deltaNormalDebt = contextData.fiat
-    .debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
+  let deltaNormalDebt = debtToNormalDebt(deltaDebt, collateralTypeData.state.codex.virtualRate)
     .mul(WAD.sub(decToWad(0.001)))
     .div(WAD);
   if (position.normalDebt.sub(deltaNormalDebt).lt(WAD)) deltaNormalDebt = position.normalDebt;
