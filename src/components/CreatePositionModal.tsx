@@ -104,23 +104,23 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
 
   const hasProxy = proxies.length > 0;
 
-  const renderSummary = () => {
-    if (borrowStore.createState.deltaCollateral.isZero()) {
-      return null;
-    }
+  // const renderSummary = () => {
+  //   if (borrowStore.createState.deltaCollateral.isZero()) {
+  //     return null;
+  //   }
 
-    return (
-      <>
-        <Spacer y={0} />
-        <Text b size={'m'}>Summary</Text>
-        <Text size='0.75rem'>
-          <>
-            Swap <b>{floor2(scaleToDec(borrowStore.createState.underlier, props.modifyPositionData.collateralType.properties.underlierScale))} {props.modifyPositionData.collateralType.properties.underlierSymbol}</b> for<b> ~{floor2(wadToDec(borrowStore.createState.deltaCollateral))} {props.modifyPositionData.collateralType.metadata.symbol}</b>. Deposit <b>~{floor2(wadToDec(borrowStore.createState.deltaCollateral))} {props.modifyPositionData.collateralType.metadata.symbol}</b> as deltaCollateral. Borrow <b>~{floor2(wadToDec(borrowStore.createState.deltaDebt))} FIAT</b> against the deltaCollateral.
-          </>
-        </Text>
-      </>
-    );
-  }
+  //   return (
+  //     <>
+  //       <Spacer y={0} />
+  //       <Text b size={'m'}>Summary</Text>
+  //       <Text size='0.75rem'>
+  //         <>
+  //           Swap <b>{floor2(scaleToDec(borrowStore.createState.underlier, props.modifyPositionData.collateralType.properties.underlierScale))} {props.modifyPositionData.collateralType.properties.underlierSymbol}</b> for<b> ~{floor2(wadToDec(borrowStore.createState.deltaCollateral))} {props.modifyPositionData.collateralType.metadata.symbol}</b>. Deposit <b>~{floor2(wadToDec(borrowStore.createState.deltaCollateral))} {props.modifyPositionData.collateralType.metadata.symbol}</b> as deltaCollateral. Borrow <b>~{floor2(wadToDec(borrowStore.createState.deltaDebt))} FIAT</b> against the deltaCollateral.
+  //         </>
+  //       </Text>
+  //     </>
+  //   );
+  // }
 
   const renderFormAlerts = () => {
     const formAlerts = [];
