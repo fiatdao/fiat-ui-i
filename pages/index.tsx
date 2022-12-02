@@ -483,30 +483,16 @@ const Home: NextPage = () => {
         />
       </Container>
 
-      <CreatePositionModal
-        createPosition={createPosition}
-        contextData={contextData}
-        disableActions={disableActions}
-        modifyPositionData={modifyPositionData}
-        selectedCollateralTypeId={selectedCollateralTypeId}
-        setUnderlierAllowanceForProxy={setUnderlierAllowanceForProxy}
-        unsetUnderlierAllowanceForProxy={unsetUnderlierAllowanceForProxy}
-        transactionData={transactionData}
-        open={(!!selectedCollateralTypeId && !!modifyPositionData)}
-        onClose={() => {
-          setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-          setModifyPositionData(initialState.modifyPositionData);
-          borrowStore.reset();
-        }}
-      />
-
       <BorrowModal
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         contextData={contextData}
+        createPosition={createPosition}
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
+        selectedPositionId={selectedPositionId}
+        selectedCollateralTypeId={selectedCollateralTypeId}
         setFIATAllowanceForProxy={setFIATAllowanceForProxy}
         unsetFIATAllowanceForProxy={unsetFIATAllowanceForProxy}
         setFIATAllowanceForMoneta={setFIATAllowanceForMoneta}
@@ -516,9 +502,10 @@ const Home: NextPage = () => {
         setTransactionStatus={(status) =>
           setTransactionData({ ...transactionData, status })
         }
-        open={(!!selectedPositionId)}
+        open={!!modifyPositionData && (!!selectedCollateralTypeId || !!selectedPositionId)}
         onClose={() => {
-          setSelectedPositionId(initialState.selectedCollateralTypeId);
+          setSelectedPositionId(initialState.selectedPositionId);
+          setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
           borrowStore.reset();
         }}

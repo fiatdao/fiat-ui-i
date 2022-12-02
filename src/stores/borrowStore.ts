@@ -67,19 +67,16 @@ interface BorrowActions {
       fiat: any,
       value: string,
       modifyPositionData: any,
-      selectedCollateralTypeId?: string
     ) => void;
     setSlippagePct: (
       fiat: any,
       value: string,
       modifyPositionData: any,
-      selectedCollateralTypeId?: string
     ) => void;
     setTargetedCollRatio: (
       fiat: any,
       value: number,
       modifyPositionData: any,
-      selectedCollateralTypeId: string
     ) => void;
     calculatePositionValuesAfterCreation: (
       fiat: any,
@@ -347,7 +344,6 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         }
       }),
     },
-
 
     /*
        ___ _   _  ____ ____  _____    _    ____  _____ 

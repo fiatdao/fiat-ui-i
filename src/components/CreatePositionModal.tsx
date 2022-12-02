@@ -258,7 +258,7 @@ const CreatePositionModalBody = (props: CreatePositionModalProps) => {
                   return;
                 }
                 borrowStore.createActions.setTargetedCollRatio(
-                  props.contextData.fiat, value, props.modifyPositionData, props.selectedCollateralTypeId
+                  props.contextData.fiat, value, props.modifyPositionData
                 );
               }}
               min={1.001}
