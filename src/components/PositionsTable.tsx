@@ -50,7 +50,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
       <Text h2>Positions</Text>
       <Table
         aria-label='Positions'
-        css={{ height: 'auto', minWidth: '100%' }}
+        css={{ height: 'auto', minWidth: '1088px' }}
         selectionMode='single'
         selectedKeys={'1'}
         onSelectionChange={(selected) =>
@@ -144,7 +144,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
                       ? '∞' : `${floor2(wadToDec(collRatio.mul(100)))}%`
                     }
                   </Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell css={{'& span': {width: '100%'}}}>
                     <Badge isSquared color={new Date() < maturityFormatted ? 'success' : 'error'} variant='flat' >
                       {formatUnixTimestamp(maturity)}, ({daysUntilMaturity} days)
                     </Badge>
