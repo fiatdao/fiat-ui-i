@@ -587,7 +587,6 @@ const DecreaseForm = ({
 
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
         <PositionPreview
-          fiat={contextData.fiat}
           formDataLoading={borrowStore.formDataLoading}
           positionCollateral={modifyPositionData.position.collateral}
           positionNormalDebt={modifyPositionData.position.normalDebt}
@@ -820,7 +819,6 @@ const RedeemForm = ({
 
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
         <PositionPreview
-          fiat={contextData.fiat}
           formDataLoading={borrowStore.formDataLoading}
           positionCollateral={modifyPositionData.position.collateral}
           positionNormalDebt={modifyPositionData.position.normalDebt}
