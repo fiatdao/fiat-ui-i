@@ -70,10 +70,10 @@ const BorrowModalBody = (props: BorrowModalProps) => {
   React.useEffect(() => {
     if (!!props.selectedCollateralTypeId && borrowStore.mode !== Mode.CREATE) {
       borrowStore.setMode(Mode.CREATE);
-    } else if (matured && borrowStore.mode !== Mode.REDEEM) {
+    } else if (props.modifyPositionData.position && matured && borrowStore.mode !== Mode.REDEEM) {
       borrowStore.setMode(Mode.REDEEM);
     }  
-  }, [borrowStore, props.selectedCollateralTypeId, matured, props.contextData.fiat])
+  }, [props.modifyPositionData.position, borrowStore.mode, borrowStore.setMode, props.selectedCollateralTypeId, matured])
 
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
     // TODO: add skeleton components instead of loading
@@ -118,6 +118,20 @@ const BorrowModalBody = (props: BorrowModalProps) => {
         </Navbar.Link>
       );
     }
+  }
+
+  if (!props.modifyPositionData.position && matured) {
+    return (
+      <Modal.Header>
+        <Text id='modal-title' size={18}>
+          <Text b size={18}>Matured Asset</Text>
+          <br />
+          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
+          <br />
+          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType.properties.maturity)}`}</Text>
+        </Text>
+      </Modal.Header>
+    );
   }
 
   return (
@@ -171,7 +185,7 @@ const BorrowModalBody = (props: BorrowModalProps) => {
             unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
             
           />
-        : borrowStore.mode === Mode.DECREASE
+        : !!props.selectedPositionId && borrowStore.mode === Mode.DECREASE
         ? <DecreaseForm
             contextData={props.contextData}
             disableActions={props.disableActions}
@@ -183,7 +197,7 @@ const BorrowModalBody = (props: BorrowModalProps) => {
             setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
             sellCollateralAndModifyDebt={props.sellCollateralAndModifyDebt}
           />
-        : borrowStore.mode === Mode.REDEEM
+        : !!props.selectedPositionId && borrowStore.mode === Mode.REDEEM
         ? <RedeemForm
             contextData={props.contextData}
             disableActions={props.disableActions}
@@ -255,22 +269,6 @@ const CreateForm = ({
     underlierBalance,
     monetaDelegate,
   } = modifyPositionData;
-
-  if (Math.floor(Date.now() / 1000) > Number(maturity.toString())) {
-    return (
-      <>
-        <Modal.Header>
-          <Text id='modal-title' size={18}>
-            <Text b size={18}>Matured Asset</Text>
-            <br />
-            <Text b size={16}>{`${protocol} - ${asset}`}</Text>
-            <br />
-            <Text b size={14}>{`${formatUnixTimestamp(maturity)}`}</Text>
-          </Text>
-        </Modal.Header>
-      </>
-    );
-  }
 
   const { action: currentTxAction } = transactionData;
 
