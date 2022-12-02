@@ -1,6 +1,6 @@
 import create from 'zustand';
 import { BigNumber } from 'ethers';
-import { decToScale, decToWad, scaleToWad, WAD, wadToDec, wadToScale, ZERO } from '@fiatdao/sdk';
+import { computeCollateralizationRatio, computeMaxNormalDebt, debtToNormalDebt, decToScale, decToWad, normalDebtToDebt, scaleToWad, WAD, wadToDec, wadToScale, ZERO} from '@fiatdao/sdk';
 
 import * as userActions from '../actions';
 import { debounce, floor4 } from '../utils';
@@ -311,11 +311,11 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
 
           // For new position, calculate deltaDebt based on targetedCollRatio
           const { targetedCollRatio } = get().createState;
-          const deltaNormalDebt = fiat.computeMaxNormalDebt(deltaCollateral, rate, fairPrice, targetedCollRatio);
-          const deltaDebt = fiat.normalDebtToDebt(deltaNormalDebt, rate);
+          const deltaNormalDebt = computeMaxNormalDebt(deltaCollateral, rate, fairPrice, targetedCollRatio);
+          const deltaDebt = normalDebtToDebt(deltaNormalDebt, rate);
           const collateral = deltaCollateral;
           const debt = deltaDebt;
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, deltaNormalDebt, rate);
+          const collRatio = computeCollateralizationRatio(collateral, fairPrice, deltaNormalDebt, rate);
 
           if (deltaDebt.gt(ZERO) && deltaDebt.lte(debtFloor)) set(() => ({
             formErrors: [
@@ -456,9 +456,9 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           // Estimate new position values based on deltaDebt, taking into account an existing position's collateral
           const { deltaDebt } = get().increaseState;
           const collateral = position.collateral.add(deltaCollateral);
-          const debt = fiat.normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
-          const normalDebt = fiat.debtToNormalDebt(debt, rate);
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+          const debt = normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
+          const normalDebt = debtToNormalDebt(debt, rate);
+          const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
 
           if (debt.gt(ZERO) && debt.lte(collateralType.settings.codex.debtFloor) ) set(() => ({
             formErrors: [
@@ -574,7 +574,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
       },
 
       setMaxDeltaDebt: (fiat, modifyPositionData) => {
-        const deltaDebt = fiat.normalDebtToDebt(
+        const deltaDebt = normalDebtToDebt(
           modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate
         );
 
@@ -608,7 +608,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               throw e;
             }
           }
-          const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
+          const deltaNormalDebt = debtToNormalDebt(deltaDebt, rate);
 
           if (position.collateral.lt(deltaCollateral)) set(() => ({
             formErrors: [...get().formErrors, 'Insufficient collateral']
@@ -621,7 +621,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           let normalDebt = position.normalDebt.sub(deltaNormalDebt);
           // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
           if (normalDebt.lt(WAD)) normalDebt = ZERO;
-          const debt = fiat.normalDebtToDebt(normalDebt, rate);
+          const debt = normalDebtToDebt(normalDebt, rate);
           if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({
             formErrors: [
               ...get().formErrors,
@@ -629,7 +629,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
             ]
           }));
 
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+          const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
           if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
             set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
 
@@ -649,8 +649,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               ...state.decreaseState,
               underlier: ZERO,
               collateral: position.collateral,
-              debt: fiat.normalDebtToDebt(position.normalDebt, rate),
-              collRatio: fiat.computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
+              debt: normalDebtToDebt(position.normalDebt, rate),
+              collRatio: computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
               formErrors: [...get().formErrors, e.message],
             },
             formDataLoading: false,
@@ -741,7 +741,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
       },
 
       setMaxDeltaDebt: (fiat, modifyPositionData) => {
-        const deltaDebt = fiat.normalDebtToDebt(
+        const deltaDebt = normalDebtToDebt(
           modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate
         );
 
@@ -759,7 +759,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
 
         try {
           const { deltaCollateral, deltaDebt } = get().redeemState;
-          const deltaNormalDebt = fiat.debtToNormalDebt(deltaDebt, rate);
+          const deltaNormalDebt = debtToNormalDebt(deltaDebt, rate);
 
           if (position.collateral.lt(deltaCollateral)) set(() => ({
             formErrors: [...get().formErrors, 'Insufficient collateral']
@@ -772,14 +772,14 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           let normalDebt = position.normalDebt.sub(deltaNormalDebt);
           // override normalDebt to position.normalDebt if normalDebt is less than 1 FIAT 
           if (normalDebt.lt(WAD)) normalDebt = ZERO;
-          const debt = fiat.normalDebtToDebt(normalDebt, rate);
+          const debt = normalDebtToDebt(normalDebt, rate);
           if (debt.gt(ZERO) && debt.lt(debtFloor)) set(() => ({
             formErrors: [
               ...get().formErrors,
               `This collateral type requires a minimum of ${wadToDec(debtFloor)} FIAT to be borrowed`
             ]
           }));
-          const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
+          const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
           if (!(collateral.isZero() && normalDebt.isZero()) && collRatio.lte(WAD))
             set(() => ({ formErrors: [...get().formErrors, 'Collateralization Ratio has to be greater than 100%'] }));
 
@@ -798,8 +798,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               ...state.redeemState,
               underlier: ZERO,
               collateral: position.collateral,
-              debt: fiat.normalDebtToDebt(position.normalDebt, rate),
-              collRatio: fiat.computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
+              debt: normalDebtToDebt(position.normalDebt, rate),
+              collRatio: computeCollateralizationRatio(position.collateral, fairPrice, position.normalDebt, rate),
             },
             formDataLoading: false,
             formErrors: [...get().formErrors, e.message],
