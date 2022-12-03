@@ -1,257 +1,17 @@
-import React, { useState } from 'react';
-import {
-  Button,
-  Card,
-  Grid,
-  Input,
-  Loading,
-  Modal,
-  Navbar,
-  Spacer,
-  Switch,
-  Text,
-} from '@nextui-org/react';
+import { scaleToDec, wadToDec } from '@fiatdao/sdk';
+import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
-import { scaleToDec, wadToDec } from '@fiatdao/sdk';
-import { commifyToDecimalPlaces, floor2, floor5, formatUnixTimestamp } from '../utils';
-import { TransactionStatus } from '../../pages';
-import { Mode, useBorrowStore } from '../stores/borrowStore';
-import { Alert } from './Alert';
-import { InputLabelWithMax } from './InputLabelWithMax';
+import React from 'react';
 import shallow from 'zustand/shallow';
+import { useBorrowStore } from '../../stores/borrowStore';
+import { commifyToDecimalPlaces, floor2, floor5 } from '../../utils';
+import { Alert } from '../Alert';
+import { InputLabelWithMax } from '../InputLabelWithMax';
+import { PositionPreview } from './PositionPreview';
 
-interface PositionModalProps {
-  buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
-  setFIATAllowanceForMoneta: (fiat: any) => any;
-  setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  unsetFIATAllowanceForProxy: (fiat: any) => any;
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
-  unsetUnderlierAllowanceForProxy: (fiat: any) => any;
-  setTransactionStatus: (status: TransactionStatus) => void;
-  contextData: any;
-  disableActions: boolean;
-  modifyPositionData: any;
-  selectedCollateralTypeId: string | null;
-  selectedPositionId: string | null;
-  transactionData: any;
-  open: boolean;
-  onClose: () => void;
-}
-
-export const PositionModal = (props: PositionModalProps) => {
-  return (
-    <Modal
-      preventClose
-      closeButton={!props.disableActions}
-      blur
-      open={props.open}
-      onClose={() => props.onClose()}
-      width='27rem'
-    >
-      <PositionModalBody {...props} />
-    </Modal>
-  );
-};
-
-const PositionModalBody = (props: PositionModalProps) => {
-  const borrowStore = useBorrowStore();
-  const [ leverModeActive, setLeverModeActive ] = useState(false);
-
-  const matured = React.useMemo(() => {
-    const maturity = props.modifyPositionData.collateralType?.properties.maturity.toString();
-    return (maturity !== undefined && !(new Date() < new Date(Number(maturity) * 1000)));
-  }, [props.modifyPositionData.collateralType?.properties.maturity])
-
-  // Set initial mode of modal depending on props
-  React.useEffect(() => {
-    if (!!props.selectedCollateralTypeId && borrowStore.mode !== Mode.CREATE) {
-      borrowStore.setMode(Mode.CREATE);
-    } else if (props.modifyPositionData.position && matured && borrowStore.mode !== Mode.REDEEM) {
-      borrowStore.setMode(Mode.REDEEM);
-    }  
-  }, [props.modifyPositionData.position, borrowStore.mode, borrowStore.setMode, props.selectedCollateralTypeId, matured])
-
-  if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
-    // TODO: add skeleton components instead of null
-    return null;
-  }
-
-  const renderNavbarLinks = () => {
-    if (!props.modifyPositionData.position) {
-      return <Navbar.Link isDisabled={props.disableActions} isActive>Create</Navbar.Link>
-    }
-
-    if (!matured) {
-      return (
-        <>
-          <Navbar.Link
-            isDisabled={props.disableActions}
-            isActive={borrowStore.mode === Mode.INCREASE}
-            onClick={() => {
-              if (props.disableActions) return;
-              borrowStore.setMode(Mode.INCREASE);
-            }}
-          >
-            Increase
-          </Navbar.Link>
-          <Navbar.Link
-            isDisabled={props.disableActions}
-            isActive={borrowStore.mode === Mode.DECREASE}
-            onClick={() => {
-              if (props.disableActions) return;
-              borrowStore.setMode(Mode.DECREASE);
-            }}
-          >
-            Decrease
-          </Navbar.Link>
-        </>
-      );
-    } else {
-      return (
-        <Navbar.Link isDisabled={props.disableActions || !matured} isActive={borrowStore.mode === Mode.REDEEM}>
-          Redeem
-        </Navbar.Link>
-      );
-    }
-  }
-
-  const renderBorrowForm = () => {
-    return !!props.selectedCollateralTypeId && borrowStore.mode === Mode.CREATE
-        ? <CreateForm
-            contextData={props.contextData}
-            disableActions={props.disableActions}
-            modifyPositionData={props.modifyPositionData}
-            transactionData={props.transactionData}
-            onClose={props.onClose}
-            createPosition={props.createPosition}
-            setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-            unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
-        />
-        : !!props.selectedPositionId && borrowStore.mode === Mode.INCREASE
-        ? <IncreaseForm
-            contextData={props.contextData}
-            disableActions={props.disableActions}
-            modifyPositionData={props.modifyPositionData}
-            transactionData={props.transactionData}
-            onClose={props.onClose}
-            buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
-            setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
-            unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
-            
-          />
-        : !!props.selectedPositionId && borrowStore.mode === Mode.DECREASE
-        ? <DecreaseForm
-            contextData={props.contextData}
-            disableActions={props.disableActions}
-            modifyPositionData={props.modifyPositionData}
-            transactionData={props.transactionData}
-            onClose={props.onClose}
-            setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
-            unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
-            setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
-            sellCollateralAndModifyDebt={props.sellCollateralAndModifyDebt}
-          />
-        : !!props.selectedPositionId && borrowStore.mode === Mode.REDEEM
-        ? <RedeemForm
-            contextData={props.contextData}
-            disableActions={props.disableActions}
-            modifyPositionData={props.modifyPositionData}
-            transactionData={props.transactionData}
-            onClose={props.onClose}
-            setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
-            unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
-            setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
-            redeemCollateralAndModifyDebt={props.redeemCollateralAndModifyDebt}
-          />
-        : null
-      }
-
-  const renderLeverForm = () => {
-    return <p>bruh</p>
-  }
-
-  if (!props.modifyPositionData.position && matured) {
-    return (
-      <Modal.Header>
-        <Text id='modal-title' size={18}>
-          <Text b size={18}>Matured Asset</Text>
-          <br />
-          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
-          <br />
-          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType.properties.maturity)}`}</Text>
-        </Text>
-      </Modal.Header>
-    );
-  }
-
-  return (
-    <>
-      <Modal.Header>
-        <Text id='modal-title' size={18}>
-          <Text b size={18}>
-            {borrowStore.mode === Mode.CREATE ? 'Create' : 'Modify'} Position
-          </Text>
-          <br />
-          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
-          <br />
-          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType?.properties.maturity)}`}</Text>
-        </Text>
-      </Modal.Header>
-      <Modal.Body>
-        <Navbar
-          variant='static'
-          isCompact
-          disableShadow
-          disableBlur
-          containerCss={{ justifyContent: 'center', background: 'transparent' }}
-        >
-          <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-            <Navbar.Link
-              isDisabled={props.disableActions}
-              isActive={!leverModeActive}
-              onClick={() => {
-                setLeverModeActive(false)
-              }}
-            >
-              Borrow
-            </Navbar.Link>
-            <Navbar.Link
-              isDisabled={props.disableActions}
-              isActive={leverModeActive}
-              onClick={() => {
-                setLeverModeActive(true)
-              }}
-            >
-              Lever
-            </Navbar.Link>
-          </Navbar.Content>
-        </Navbar>
-      </Modal.Body>
-      <Modal.Body>
-        <Navbar
-          variant='static'
-          isCompact
-          disableShadow
-          disableBlur
-          containerCss={{ justifyContent: 'center', background: 'transparent' }}
-        >
-          <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-            { renderNavbarLinks() }
-          </Navbar.Content>
-        </Navbar>
-      </Modal.Body>
-
-      { leverModeActive ? renderLeverForm() : renderBorrowForm() }
-    </>
-  );
-};
-
-const CreateForm = ({
+export const CreateForm = ({
   contextData,
   disableActions,
   modifyPositionData,
@@ -603,7 +363,7 @@ const CreateForm = ({
   );
 }
 
-const IncreaseForm = ({
+export const IncreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
@@ -843,7 +603,7 @@ const IncreaseForm = ({
   );
 }
 
-const DecreaseForm = ({
+export const DecreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
@@ -1126,7 +886,7 @@ const DecreaseForm = ({
   );
 }
 
-const RedeemForm = ({
+export const RedeemForm = ({
   contextData,
   disableActions,
   modifyPositionData,
@@ -1357,94 +1117,4 @@ const RedeemForm = ({
       </Modal.Footer>
     </>
   )
-}
-
-const PositionPreview = ({
-  fiat,
-  formDataLoading,
-  positionCollateral,
-  positionNormalDebt,
-  estimatedCollateral,
-  estimatedCollateralRatio,
-  estimatedDebt,
-  virtualRate,
-  fairPrice,
-  symbol,
-}: {
-  fiat: any,
-  formDataLoading: boolean,
-  positionCollateral: BigNumber,
-  positionNormalDebt: BigNumber,
-  estimatedCollateral: BigNumber,
-  estimatedCollateralRatio: BigNumber,
-  estimatedDebt: BigNumber,
-  virtualRate: BigNumber,
-  fairPrice: BigNumber,
-  symbol: string,
-}) => {
-  return (
-    <>
-      <Text b size={'m'}>
-        Position Preview
-      </Text>
-      <Input
-        readOnly
-        value={(formDataLoading)
-          ? ' '
-          : `${floor2(wadToDec(positionCollateral))} → ${floor2(wadToDec(estimatedCollateral))}`
-        }
-        placeholder='0'
-        type='string'
-        label={`Collateral (before: ${floor2(wadToDec(positionCollateral))} ${symbol})`}
-        labelRight={symbol}
-        contentLeft={formDataLoading ? <Loading size='xs' /> : null}
-        size='sm'
-        status='primary'
-      />
-      <Input
-        readOnly
-        value={(formDataLoading)
-          ? ' '
-          : `${floor5(wadToDec(fiat.normalDebtToDebt(positionNormalDebt, virtualRate)))} → ${floor5(wadToDec(estimatedDebt))}`
-        }
-        placeholder='0'
-        type='string'
-        label={`Debt (before: ${floor5(wadToDec(fiat.normalDebtToDebt(positionNormalDebt, virtualRate)))} FIAT)`}
-        labelRight={'FIAT'}
-        contentLeft={formDataLoading ? <Loading size='xs' /> : null}
-        size='sm'
-        status='primary'
-      />
-      <Input
-        readOnly
-        value={(() => {
-          if (formDataLoading) return ' ';
-          let collRatioBefore = fiat.computeCollateralizationRatio(
-            positionCollateral, fairPrice, positionNormalDebt, virtualRate
-          );
-          collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
-            ? '∞' : `${floor2(wadToDec(collRatioBefore.mul(100)))}%`;
-            const collRatioAfter = (estimatedCollateralRatio.eq(ethers.constants.MaxUint256))
-              ? '∞' : `${floor2(wadToDec(estimatedCollateralRatio.mul(100)))}%`;
-              return `${collRatioBefore} → ${collRatioAfter}`;
-        })()}
-        placeholder='0'
-        type='string'
-        label={
-          `Collateralization Ratio (before: ${(() => {
-          const collRatio = fiat.computeCollateralizationRatio(
-            positionCollateral, fairPrice, positionNormalDebt, virtualRate
-          );
-          if (collRatio.eq(ethers.constants.MaxUint256)) return '∞'
-            return floor2(wadToDec(collRatio.mul(100)));
-        })()
-        }%)`
-        }
-        labelRight={'🚦'}
-        contentLeft={formDataLoading ? <Loading size='xs' /> : null}
-        size='sm'
-        status='primary'
-      />
-    </>
-  );
 }

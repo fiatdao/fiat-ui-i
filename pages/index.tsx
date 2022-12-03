@@ -9,8 +9,7 @@ import { FIAT, WAD, wadToDec } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
-import { CreatePositionModal } from '../src/components/CreatePositionModal';
-import { PositionModal } from '../src/components/PositionModal';
+import { PositionModal } from '../src/components/PositionModal/PositionModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
