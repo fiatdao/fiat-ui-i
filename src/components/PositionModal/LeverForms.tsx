@@ -11,7 +11,7 @@ import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
 import { PositionPreview } from './PositionPreview';
 
-export const CreateForm = ({
+export const LeverCreateForm = ({
   contextData,
   disableActions,
   modifyPositionData,
@@ -363,7 +363,7 @@ export const CreateForm = ({
   );
 }
 
-export const IncreaseForm = ({
+export const LeverIncreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
@@ -385,7 +385,7 @@ export const IncreaseForm = ({
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
   const [submitError, setSubmitError] = React.useState('');
-  const leverStore = useBorrowStore(
+  const leverStore = useLeverStore(
     React.useCallback(
       (state) => ({
         increaseState: state.increaseState,
@@ -603,7 +603,7 @@ export const IncreaseForm = ({
   );
 }
 
-export const DecreaseForm = ({
+export const LeverDecreaseForm = ({
   contextData,
   disableActions,
   modifyPositionData,
@@ -627,7 +627,7 @@ export const DecreaseForm = ({
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
-  const leverStore = useBorrowStore(
+  const leverStore = useLeverStore(
     React.useCallback(
       (state) => ({
         decreaseState: state.decreaseState,
@@ -886,7 +886,7 @@ export const DecreaseForm = ({
   );
 }
 
-export const RedeemForm = ({
+export const LeverRedeemForm = ({
   contextData,
   disableActions,
   modifyPositionData,
@@ -910,7 +910,7 @@ export const RedeemForm = ({
   redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
 }) => {
   const [submitError, setSubmitError] = React.useState('');
-  const leverStore = useBorrowStore(
+  const leverStore = useLeverStore(
     React.useCallback(
       (state) => ({
         redeemState: state.redeemState,

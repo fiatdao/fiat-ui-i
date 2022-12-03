@@ -6,6 +6,7 @@ import { TransactionStatus } from '../../../pages';
 import { Mode, useBorrowStore } from '../../stores/borrowStore';
 import { formatUnixTimestamp } from '../../utils';
 import { CreateForm, DecreaseForm, IncreaseForm, RedeemForm } from './BorrowForms';
+import { LeverCreateForm, LeverDecreaseForm, LeverIncreaseForm, LeverRedeemForm } from './LeverForms';
 
 interface PositionModalProps {
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
@@ -107,7 +108,57 @@ const PositionModalBody = (props: PositionModalProps) => {
     }
   }
 
-  const renderBorrowForm = () => {
+  const renderForm = () => {
+    if (leverModeActive) {
+    return !!props.selectedCollateralTypeId && borrowStore.mode === Mode.CREATE
+        ? <LeverCreateForm
+            contextData={props.contextData}
+            disableActions={props.disableActions}
+            modifyPositionData={props.modifyPositionData}
+            transactionData={props.transactionData}
+            onClose={props.onClose}
+            createPosition={props.createPosition}
+            setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
+            unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
+        />
+        : !!props.selectedPositionId && borrowStore.mode === Mode.INCREASE
+        ? <LeverIncreaseForm
+            contextData={props.contextData}
+            disableActions={props.disableActions}
+            modifyPositionData={props.modifyPositionData}
+            transactionData={props.transactionData}
+            onClose={props.onClose}
+            buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
+            setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
+            unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
+            
+          />
+        : !!props.selectedPositionId && borrowStore.mode === Mode.DECREASE
+        ? <LeverDecreaseForm
+            contextData={props.contextData}
+            disableActions={props.disableActions}
+            modifyPositionData={props.modifyPositionData}
+            transactionData={props.transactionData}
+            onClose={props.onClose}
+            setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
+            unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
+            setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
+            sellCollateralAndModifyDebt={props.sellCollateralAndModifyDebt}
+          />
+        : !!props.selectedPositionId && borrowStore.mode === Mode.REDEEM
+        ? <LeverRedeemForm
+            contextData={props.contextData}
+            disableActions={props.disableActions}
+            modifyPositionData={props.modifyPositionData}
+            transactionData={props.transactionData}
+            onClose={props.onClose}
+            setFIATAllowanceForProxy={props.setFIATAllowanceForProxy}
+            unsetFIATAllowanceForProxy={props.unsetFIATAllowanceForProxy}
+            setFIATAllowanceForMoneta={props.setFIATAllowanceForMoneta}
+            redeemCollateralAndModifyDebt={props.redeemCollateralAndModifyDebt}
+          />
+        : null
+    } else {
     return !!props.selectedCollateralTypeId && borrowStore.mode === Mode.CREATE
         ? <CreateForm
             contextData={props.contextData}
@@ -156,10 +207,7 @@ const PositionModalBody = (props: PositionModalProps) => {
             redeemCollateralAndModifyDebt={props.redeemCollateralAndModifyDebt}
           />
         : null
-      }
-
-  const renderLeverForm = () => {
-    return <p>bruh</p>
+    }
   }
 
   if (!props.modifyPositionData.position && matured) {
@@ -233,7 +281,7 @@ const PositionModalBody = (props: PositionModalProps) => {
         </Navbar>
       </Modal.Body>
 
-      { leverModeActive ? renderLeverForm() : renderBorrowForm() }
+      { renderForm() }
     </>
   );
 };
