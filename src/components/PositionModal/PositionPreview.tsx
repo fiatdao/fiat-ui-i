@@ -1,11 +1,10 @@
-import { wadToDec } from '@fiatdao/sdk';
+import { computeCollateralizationRatio, normalDebtToDebt, wadToDec } from '@fiatdao/sdk';
 import { Input, Loading, Text } from '@nextui-org/react';
 import 'antd/dist/antd.css';
 import { BigNumber, ethers } from 'ethers';
 import { floor2, floor5 } from '../../utils';
 
 export const PositionPreview = ({
-  fiat,
   formDataLoading,
   positionCollateral,
   positionNormalDebt,
@@ -16,7 +15,6 @@ export const PositionPreview = ({
   fairPrice,
   symbol,
 }: {
-  fiat: any,
   formDataLoading: boolean,
   positionCollateral: BigNumber,
   positionNormalDebt: BigNumber,
@@ -50,11 +48,11 @@ export const PositionPreview = ({
         readOnly
         value={(formDataLoading)
           ? ' '
-          : `${floor5(wadToDec(fiat.normalDebtToDebt(positionNormalDebt, virtualRate)))} → ${floor5(wadToDec(estimatedDebt))}`
+          : `${floor5(wadToDec(normalDebtToDebt(positionNormalDebt, virtualRate)))} → ${floor5(wadToDec(estimatedDebt))}`
         }
         placeholder='0'
         type='string'
-        label={`Debt (before: ${floor5(wadToDec(fiat.normalDebtToDebt(positionNormalDebt, virtualRate)))} FIAT)`}
+        label={`Debt (before: ${floor5(wadToDec(normalDebtToDebt(positionNormalDebt, virtualRate)))} FIAT)`}
         labelRight={'FIAT'}
         contentLeft={formDataLoading ? <Loading size='xs' /> : null}
         size='sm'
@@ -64,7 +62,7 @@ export const PositionPreview = ({
         readOnly
         value={(() => {
           if (formDataLoading) return ' ';
-          let collRatioBefore = fiat.computeCollateralizationRatio(
+          let collRatioBefore = computeCollateralizationRatio(
             positionCollateral, fairPrice, positionNormalDebt, virtualRate
           );
           collRatioBefore = (collRatioBefore.eq(ethers.constants.MaxUint256))
@@ -77,7 +75,7 @@ export const PositionPreview = ({
         type='string'
         label={
           `Collateralization Ratio (before: ${(() => {
-          const collRatio = fiat.computeCollateralizationRatio(
+          const collRatio = computeCollateralizationRatio(
             positionCollateral, fairPrice, positionNormalDebt, virtualRate
           );
           if (collRatio.eq(ethers.constants.MaxUint256)) return '∞'

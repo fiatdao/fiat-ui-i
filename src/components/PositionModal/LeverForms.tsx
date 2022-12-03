@@ -517,7 +517,6 @@ export const LeverIncreaseForm = ({
 
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
         <PositionPreview
-          fiat={contextData.fiat}
           formDataLoading={leverStore.formDataLoading}
           positionCollateral={modifyPositionData.position.collateral}
           positionNormalDebt={modifyPositionData.position.normalDebt}
@@ -773,7 +772,6 @@ export const LeverDecreaseForm = ({
 
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
         <PositionPreview
-          fiat={contextData.fiat}
           formDataLoading={leverStore.formDataLoading}
           positionCollateral={modifyPositionData.position.collateral}
           positionNormalDebt={modifyPositionData.position.normalDebt}
@@ -1006,7 +1004,6 @@ export const LeverRedeemForm = ({
 
       <Modal.Body css={{ marginTop: 'var(--nextui-space-8)' }}>
         <PositionPreview
-          fiat={contextData.fiat}
           formDataLoading={leverStore.formDataLoading}
           positionCollateral={modifyPositionData.position.collateral}
           positionNormalDebt={modifyPositionData.position.normalDebt}
