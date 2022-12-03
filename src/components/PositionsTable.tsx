@@ -3,7 +3,7 @@ import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/
 import { WAD, wadToDec } from '@fiatdao/sdk';
 
 import {
-  encodePositionId, floor2, floor4, formatUnixTimestamp, getCollateralTypeData,
+  encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
 } from '../utils';
 import { ethers } from 'ethers';

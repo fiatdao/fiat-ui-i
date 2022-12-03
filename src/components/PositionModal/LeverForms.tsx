@@ -58,8 +58,8 @@ export const LeverCreateForm = ({
   const { proxies } = contextData;
   const {
     collateralType: {
-      metadata: { symbol: tokenSymbol, protocol, asset },
-      properties: { underlierScale, underlierSymbol, maturity },
+      metadata: { symbol: tokenSymbol },
+      properties: { underlierScale, underlierSymbol },
     },
     underlierAllowance,
     underlierBalance,
