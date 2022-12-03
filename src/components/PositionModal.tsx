@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Button,
   Card,
@@ -22,7 +22,7 @@ import { Alert } from './Alert';
 import { InputLabelWithMax } from './InputLabelWithMax';
 import shallow from 'zustand/shallow';
 
-interface BorrowModalProps {
+interface PositionModalProps {
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
@@ -43,7 +43,7 @@ interface BorrowModalProps {
   onClose: () => void;
 }
 
-export const BorrowModal = (props: BorrowModalProps) => {
+export const PositionModal = (props: PositionModalProps) => {
   return (
     <Modal
       preventClose
@@ -53,13 +53,14 @@ export const BorrowModal = (props: BorrowModalProps) => {
       onClose={() => props.onClose()}
       width='27rem'
     >
-      <BorrowModalBody {...props} />
+      <PositionModalBody {...props} />
     </Modal>
   );
 };
 
-const BorrowModalBody = (props: BorrowModalProps) => {
+const PositionModalBody = (props: PositionModalProps) => {
   const borrowStore = useBorrowStore();
+  const [ leverModeActive, setLeverModeActive ] = useState(false);
 
   const matured = React.useMemo(() => {
     const maturity = props.modifyPositionData.collateralType?.properties.maturity.toString();
@@ -76,8 +77,7 @@ const BorrowModalBody = (props: BorrowModalProps) => {
   }, [props.modifyPositionData.position, borrowStore.mode, borrowStore.setMode, props.selectedCollateralTypeId, matured])
 
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
-    // TODO: add skeleton components instead of loading
-    // return <Loading />;
+    // TODO: add skeleton components instead of null
     return null;
   }
 
@@ -120,49 +120,8 @@ const BorrowModalBody = (props: BorrowModalProps) => {
     }
   }
 
-  if (!props.modifyPositionData.position && matured) {
-    return (
-      <Modal.Header>
-        <Text id='modal-title' size={18}>
-          <Text b size={18}>Matured Asset</Text>
-          <br />
-          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
-          <br />
-          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType.properties.maturity)}`}</Text>
-        </Text>
-      </Modal.Header>
-    );
-  }
-
-  return (
-    <>
-      <Modal.Header>
-        <Text id='modal-title' size={18}>
-          <Text b size={18}>
-            {borrowStore.mode === Mode.CREATE ? 'Create' : 'Modify'} Position
-          </Text>
-          <br />
-          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
-          <br />
-          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType?.properties.maturity)}`}</Text>
-        </Text>
-      </Modal.Header>
-      <Modal.Body>
-        <Navbar
-          variant='static'
-          isCompact
-          disableShadow
-          disableBlur
-          containerCss={{ justifyContent: 'center', background: 'transparent' }}
-        >
-          <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
-            { renderNavbarLinks() }
-          </Navbar.Content>
-        </Navbar>
-      </Modal.Body>
-
-      {
-        !!props.selectedCollateralTypeId && borrowStore.mode === Mode.CREATE
+  const renderBorrowForm = () => {
+    return !!props.selectedCollateralTypeId && borrowStore.mode === Mode.CREATE
         ? <CreateForm
             contextData={props.contextData}
             disableActions={props.disableActions}
@@ -211,6 +170,83 @@ const BorrowModalBody = (props: BorrowModalProps) => {
           />
         : null
       }
+
+  const renderLeverForm = () => {
+    return <p>bruh</p>
+  }
+
+  if (!props.modifyPositionData.position && matured) {
+    return (
+      <Modal.Header>
+        <Text id='modal-title' size={18}>
+          <Text b size={18}>Matured Asset</Text>
+          <br />
+          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
+          <br />
+          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType.properties.maturity)}`}</Text>
+        </Text>
+      </Modal.Header>
+    );
+  }
+
+  return (
+    <>
+      <Modal.Header>
+        <Text id='modal-title' size={18}>
+          <Text b size={18}>
+            {borrowStore.mode === Mode.CREATE ? 'Create' : 'Modify'} Position
+          </Text>
+          <br />
+          <Text b size={16}>{`${props.modifyPositionData.collateralType.metadata.protocol} - ${props.modifyPositionData.collateralType.metadata.asset}`}</Text>
+          <br />
+          <Text b size={14}>{`${formatUnixTimestamp(props.modifyPositionData.collateralType?.properties.maturity)}`}</Text>
+        </Text>
+      </Modal.Header>
+      <Modal.Body>
+        <Navbar
+          variant='static'
+          isCompact
+          disableShadow
+          disableBlur
+          containerCss={{ justifyContent: 'center', background: 'transparent' }}
+        >
+          <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
+            <Navbar.Link
+              isDisabled={props.disableActions}
+              isActive={!leverModeActive}
+              onClick={() => {
+                setLeverModeActive(false)
+              }}
+            >
+              Borrow
+            </Navbar.Link>
+            <Navbar.Link
+              isDisabled={props.disableActions}
+              isActive={leverModeActive}
+              onClick={() => {
+                setLeverModeActive(true)
+              }}
+            >
+              Lever
+            </Navbar.Link>
+          </Navbar.Content>
+        </Navbar>
+      </Modal.Body>
+      <Modal.Body>
+        <Navbar
+          variant='static'
+          isCompact
+          disableShadow
+          disableBlur
+          containerCss={{ justifyContent: 'center', background: 'transparent' }}
+        >
+          <Navbar.Content enableCursorHighlight variant='highlight-rounded'>
+            { renderNavbarLinks() }
+          </Navbar.Content>
+        </Navbar>
+      </Modal.Body>
+
+      { leverModeActive ? renderLeverForm() : renderBorrowForm() }
     </>
   );
 };

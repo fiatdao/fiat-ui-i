@@ -10,7 +10,7 @@ import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
 import { CreatePositionModal } from '../src/components/CreatePositionModal';
-import { BorrowModal } from '../src/components/BorrowModal';
+import { PositionModal } from '../src/components/PositionModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
@@ -468,7 +468,7 @@ const Home: NextPage = () => {
           collateralTypesData={collateralTypesData}
           positionsData={positionsData}
           onSelectCollateralType={(collateralTypeId) => {
-            // If user has an existing position for the collateral type then open BorrowModal instead
+            // If user has an existing position for the collateral type then open PositionModal instead
             const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
             const positionData = getPositionData(positionsData, vault, tokenId, contextData.proxies[0]);
             if (positionData !== undefined) {
@@ -483,7 +483,7 @@ const Home: NextPage = () => {
         />
       </Container>
 
-      <BorrowModal
+      <PositionModal
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         contextData={contextData}
         createPosition={createPosition}
