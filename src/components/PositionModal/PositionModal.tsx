@@ -59,6 +59,8 @@ const PositionModalBody = (props: PositionModalProps) => {
     } else if (props.modifyPositionData.position && matured && borrowStore.mode !== Mode.REDEEM) {
       borrowStore.setMode(Mode.REDEEM);
     }  
+    // these deps _are_ exhaustive
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.modifyPositionData.position, borrowStore.mode, borrowStore.setMode, props.selectedCollateralTypeId, matured])
 
   if (!props.contextData.user || !props.modifyPositionData.collateralType || !props.modifyPositionData.collateralType.metadata ) {
