@@ -1,6 +1,6 @@
 import React from 'react';
 import type { NextPage } from 'next';
-import { useAccount, useNetwork, useProvider } from 'wagmi';
+import { useAccount, useNetwork, useProvider, useSigner } from 'wagmi';
 import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
@@ -16,6 +16,7 @@ import {
 } from '../src/utils';
 import * as userActions from '../src/actions';
 import { useBorrowStore } from '../src/stores/borrowStore';
+import { useFiat } from '../src/stores/useFiat';
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -25,10 +26,13 @@ const Home: NextPage = () => {
   const { chain } = useNetwork();
   const addRecentTransaction = useAddRecentTransaction();
 
+  const { data: signer} = useSigner();
+  const { data: fiat } = useFiat(provider, signer);
+
   const initialState = React.useMemo(() => ({
     setupListeners: false,
     contextData: {
-      fiat: null as null | FIAT,
+      //fiat: null as null | FIAT,
       explorerUrl: null as null | string,
       user: null as null | string,
       proxies: [] as Array<string>,
@@ -100,19 +104,19 @@ const Home: NextPage = () => {
   }
 
   const handleFiatBalance = React.useCallback(async () => {
-    if (!contextData.fiat || !contextData.user) return;
-    const { fiat } = contextData.fiat.getContracts();
-    const fiatBalance = await fiat.balanceOf(contextData.user)
+    if (!fiat || !contextData.user) return;
+    const { fiat: fiatToken } = fiat.getContracts();
+    const fiatBalance = await fiatToken.balanceOf(contextData.user)
     setContextData((curContextData) => ({
       ...curContextData,
       fiatBalance: `${parseFloat(wadToDec(fiatBalance)).toFixed(2)} FIAT`
     }));
-  }, [contextData.fiat, contextData.user]);
+  }, [fiat, contextData.user]);
 
   const handleCollateralTypesData = React.useCallback(async () => {
-    if (!contextData.fiat) return;
-    const collateralTypesData_ = await contextData.fiat.fetchCollateralTypesAndPrices([]);
-    const earnableRates = await userActions.getEarnableRate(contextData.fiat, collateralTypesData_);
+    if (!fiat) return;
+    const collateralTypesData_ = await fiat.fetchCollateralTypesAndPrices([]);
+    const earnableRates = await userActions.getEarnableRate(fiat, collateralTypesData_);
 
     setCollateralTypesData(collateralTypesData_
       .filter((collateralType: any) => (collateralType.metadata != undefined))
@@ -128,14 +132,19 @@ const Home: NextPage = () => {
           earnableRate: earnableRate?.earnableRate
         }
       }));
-  }, [contextData.fiat]);
+  }, [fiat]);
 
   const handlePositionsData = React.useCallback(async () => {
-    if (!contextData || !contextData.fiat) return;
-    const userData = await contextData.fiat.fetchUserData(contextData.user);
+    if (!fiat || !contextData.user) return;
+    const userData = await fiat.fetchUserData(contextData.user);
     const positionsData = userData.flatMap((user) => user.positions);
+    const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
     setPositionsData(positionsData);
-  }, [contextData]);
+    setContextData((curContextData) => ({
+      ...curContextData,
+      proxies
+    }));
+  }, [fiat, contextData.user]);
 
   // Reset state if network or account changes
   React.useEffect(() => {
@@ -146,12 +155,12 @@ const Home: NextPage = () => {
 
   // Fetch Collateral Types Data
   React.useEffect(() => {
-    if (collateralTypesData.length !== 0 || !contextData.fiat) return;
+    if (collateralTypesData.length !== 0 || !fiat) return;
     handleCollateralTypesData();
-  }, [collateralTypesData.length, provider, contextData.fiat, handleCollateralTypesData])
+  }, [collateralTypesData.length, provider, fiat, handleCollateralTypesData])
 
-  React.useEffect(() => {
-    if (!provider || contextData.fiat || connector) return;
+  /*React.useEffect(() => {
+    if (!provider || fiat || connector) return;
     (async function () {
       const fiat = await FIAT.fromProvider(provider, null);
       setContextData((curContextData) => ({
@@ -159,7 +168,7 @@ const Home: NextPage = () => {
         fiat,
       }));
     })();
-  }, [provider, connector, contextData.fiat])
+  }, [provider, connector, fiat])*/
 
   // Fetch block explorer data
   React.useEffect(() => {
@@ -172,7 +181,8 @@ const Home: NextPage = () => {
   
   React.useEffect(() => {
     handleFiatBalance();
-  }, [contextData.fiat, handleFiatBalance])
+    handlePositionsData();
+  }, [fiat, handleFiatBalance, handlePositionsData])
 
   // Fetch User data, Vault data, and set Fiat SDK in global state
   React.useEffect(() => {
@@ -182,16 +192,9 @@ const Home: NextPage = () => {
       const signer = (await connector.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
-      const fiat = await FIAT.fromSigner(signer, undefined);
-      const userData = await fiat.fetchUserData(user.toLowerCase());
-      const proxies = userData.filter((user: any) => (user.isProxy === true)).map((user: any) => user.user);
-      const positionsData = userData.flatMap((user) => user.positions);
-      setPositionsData(positionsData);
       setContextData((curContextData) => ({
         ...curContextData,
-        fiat,
         user,
-        proxies,
       }));
     })();
     // Address and chain dependencies are needed to recreate FIAT sdk object on account or chain change,
@@ -222,7 +225,7 @@ const Home: NextPage = () => {
       if (contextData.proxies.length === 0) return;
       const { proxies: [proxy] } = contextData;
       if (
-        !contextData.fiat ||
+        !fiat ||
         data.collateralType == null ||
         (data.position &&
           data.position.owner.toLowerCase() !== proxy.toLowerCase())
@@ -230,13 +233,13 @@ const Home: NextPage = () => {
         return;
       }
 
-      const { moneta, fiat } = contextData.fiat.getContracts();
-      const underlier = contextData.fiat.getERC20Contract(data.collateralType.properties.underlierToken);
+      const { moneta, fiat } = fiat.getContracts();
+      const underlier = fiat.getERC20Contract(data.collateralType.properties.underlierToken);
 
       const signer = (await connector?.getSigner());
       if (!signer || !signer.provider) return;
       const user = await signer.getAddress();
-      const [underlierAllowance, underlierBalance, monetaFIATAllowance, proxyFIATAllowance] = await contextData.fiat.multicall([
+      const [underlierAllowance, underlierBalance, monetaFIATAllowance, proxyFIATAllowance] = await fiat.multicall([
         { contract: underlier, method: 'allowance', args: [user, proxy] },
         { contract: underlier, method: 'balanceOf', args: [user] },
         { contract: fiat, method: 'allowance', args: [proxy, moneta.address] },
@@ -343,7 +346,7 @@ const Home: NextPage = () => {
       contextData, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
     );
     const response = await sendTransaction(
-      contextData.fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs
+      fiat, true, 'createPosition', args.contract, args.methodName, ...args.methodArgs
     );
     addRecentTransaction({ hash: response.transactionHash, description: 'Create position' });
     softReset();
@@ -355,7 +358,7 @@ const Home: NextPage = () => {
        // increase (mint)
       const args = userActions.buildModifyCollateralAndDebtArgs(contextData, collateralType, deltaDebt, position);
       const response = await sendTransaction(
-        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({ hash: response.transactionHash, description: 'Borrow FIAT' });
       softReset();
@@ -364,7 +367,7 @@ const Home: NextPage = () => {
         contextData, collateralType, deltaCollateral, deltaDebt, underlier
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'buyCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({
         hash: response.transactionHash, description: 'Buy and deposit collateral and borrow FIAT'
@@ -382,7 +385,7 @@ const Home: NextPage = () => {
         contextData, collateralType, deltaDebt.mul(-1), position
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
       softReset();
@@ -392,7 +395,7 @@ const Home: NextPage = () => {
         contextData, collateralType, deltaCollateral, deltaDebt, underlier, position,
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'sellCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({
         hash: response.transactionHash, description: 'Withdraw and sell collateral and repay borrowed FIAT'
@@ -409,7 +412,7 @@ const Home: NextPage = () => {
         contextData, collateralType, deltaDebt.mul(-1), position
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'modifyCollateralAndDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({ hash: response.transactionHash, description: 'Repay borrowed FIAT' });
       softReset();
@@ -419,7 +422,7 @@ const Home: NextPage = () => {
         contextData, collateralType, deltaCollateral, deltaDebt, position
       );
       const response = await sendTransaction(
-        contextData.fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
+        fiat, true, 'redeemCollateralAndModifyDebt', args.contract, args.methodName, ...args.methodArgs
       );
       addRecentTransaction({
         hash: response.transactionHash, description: 'Withdraw and redeem collateral and repay borrowed FIAT'

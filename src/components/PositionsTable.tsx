@@ -1,12 +1,13 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
 import { WAD, wadToDec } from '@fiatdao/sdk';
-
+import { useProvider, useSigner } from 'wagmi';
 import {
   encodePositionId, floor2, floor4, formatUnixTimestamp, getCollateralTypeData,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
 } from '../utils';
 import { ethers } from 'ethers';
+import { useFiat } from '../stores/useFiat';
 
 interface PositionsTableProps {
   contextData: any,
@@ -21,6 +22,9 @@ export const PositionsTable = (props: PositionsTableProps) => {
     column: 'Maturity',
     direction: 'descending'
   });
+  const provider = useProvider();
+  const { data: signer} = useSigner();
+  const { data: fiat } = useFiat(provider, signer);
 
   React.useEffect(() => {
     const data = [...props.positionsData]
@@ -103,7 +107,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
               const borrowRateAnnualized = interestPerSecondToAPY(interestPerSecond);
               const debt = normalDebt.mul(virtualRate).div(WAD);
               const dueAtMaturity = normalDebt.mul(borrowRate).div(WAD);
-              const collRatio = props.contextData.fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
+              const collRatio = fiat.computeCollateralizationRatio(collateral, fairPrice, normalDebt, virtualRate);
               const maturityFormatted = new Date(Number(maturity.toString()) * 1000);
               const daysUntilMaturity = Math.max(Math.floor((Number(maturity.toString()) - Math.floor(Date.now() / 1000)) / 86400), 0);
               return (
