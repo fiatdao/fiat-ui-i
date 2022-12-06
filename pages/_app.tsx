@@ -14,6 +14,7 @@ import Head from 'next/head';
 import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
 import '../styles/global.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const { chains, provider, webSocketProvider } = configureChains([
     chain.mainnet, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [chain.goerli] : [])
@@ -68,6 +69,8 @@ const nextDarkTheme = createTheme({
   }
 })
 
+const queryClient = new QueryClient()
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
@@ -87,7 +90,9 @@ function MyApp({ Component, pageProps }: AppProps) {
             value={{ light: nextLightTheme.className, dark: nextDarkTheme.className }}
           >
             <NextUIProvider>
-              <Component {...pageProps} />
+              <QueryClientProvider client={queryClient}>
+                <Component {...pageProps} />
+              </QueryClientProvider>
             </NextUIProvider>
           </NextThemesProvider>
         </RainbowKitProvider>

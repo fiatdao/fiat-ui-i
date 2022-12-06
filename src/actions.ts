@@ -116,8 +116,8 @@ export const collateralTokenToUnderlier = async (
   }
 };
 
-export const getEarnableRate = async (fiat: any, collateralTypesData: any) => {
-  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = fiat.getContracts();
+export const getEarnableRate = async (getContracts: any, collateralTypesData: any) => {
+  const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = getContracts();
   const queries = collateralTypesData.flatMap((collateralTypeData: any) => {
     const { properties } = collateralTypeData;
     const { vault, tokenId, vaultType, tokenScale, underlierScale, maturity } = properties;

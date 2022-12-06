@@ -15,6 +15,8 @@ import {
 } from '../src/utils';
 import * as userActions from '../src/actions';
 import { useBorrowStore } from '../src/stores/borrowStore';
+import { useCollateralTypesData } from '../src/stores/collateralTypes';
+import { useQueryClient } from '@tanstack/react-query'
 
 export type TransactionStatus = null | 'error' | 'sent' | 'confirming' | 'confirmed';
 
@@ -34,7 +36,7 @@ const Home: NextPage = () => {
       fiatBalance: '' as string,
     },
     positionsData: [] as Array<any>,
-    collateralTypesData: [] as Array<any>,
+    //collateralTypesData: [] as Array<any>,
     selectedPositionId: null as null | string,
     selectedCollateralTypeId: null as null | string,
     modifyPositionData: {
@@ -65,7 +67,7 @@ const Home: NextPage = () => {
   const [initialPageLoad, setInitialPageLoad] = React.useState<boolean>(true);
   const [setupListeners, setSetupListeners] = React.useState(false);
   const [contextData, setContextData] = React.useState(initialState.contextData);
-  const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
+  //const [collateralTypesData, setCollateralTypesData] = React.useState(initialState.collateralTypesData);
   const [positionsData, setPositionsData] = React.useState(initialState.positionsData);
   const [modifyPositionData, setModifyPositionData] = React.useState(initialState.modifyPositionData);
   const [transactionData, setTransactionData] = React.useState(initialState.transactionData);
@@ -78,7 +80,7 @@ const Home: NextPage = () => {
   function resetState() {
     setSetupListeners(initialState.setupListeners);
     setContextData(initialState.contextData);
-    setCollateralTypesData(initialState.collateralTypesData);
+    //setCollateralTypesData(initialState.collateralTypesData);
     setPositionsData(initialState.positionsData);
     setModifyPositionData(initialState.modifyPositionData);
     setTransactionData(initialState.transactionData);
@@ -108,26 +110,14 @@ const Home: NextPage = () => {
     }));
   }, [contextData.fiat, contextData.user]);
 
+  const queryClient = useQueryClient();
+  const { data: collateralTypesData } = useCollateralTypesData(contextData.fiat?.fetchCollateralTypesAndPrices, contextData.fiat?.getContracts)
+
   const handleCollateralTypesData = React.useCallback(async () => {
     if (!contextData.fiat) return;
-    const collateralTypesData_ = await contextData.fiat.fetchCollateralTypesAndPrices([]);
-    const earnableRates = await userActions.getEarnableRate(contextData.fiat, collateralTypesData_);
-
-    setCollateralTypesData(collateralTypesData_
-      .filter((collateralType: any) => (collateralType.metadata != undefined))
-      .sort((a: any, b: any) => {
-        if (Number(a.properties.maturity) > Number(b.properties.maturity)) return -1;
-        if (Number(a.properties.maturity) < Number(b.properties.maturity)) return 1;
-        return 0;
-      })
-      .map((collateralType: any) => {
-        const earnableRate = earnableRates.find((item: any)  => item.vault === collateralType.properties.vault)
-        return {
-          ...collateralType,
-          earnableRate: earnableRate?.earnableRate
-        }
-      }));
-  }, [contextData.fiat]);
+    //console.log("invalidate")
+    //queryClient.invalidateQueries('collateralTypesData')
+  }, [contextData.fiat, queryClient]);
 
   const handlePositionsData = React.useCallback(async () => {
     if (!contextData || !contextData.fiat) return;
@@ -145,9 +135,10 @@ const Home: NextPage = () => {
 
   // Fetch Collateral Types Data
   React.useEffect(() => {
-    if (collateralTypesData.length !== 0 || !contextData.fiat) return;
+    if (!contextData.fiat) return;
+    console.log("call handle collat types")
     handleCollateralTypesData();
-  }, [collateralTypesData.length, provider, contextData.fiat, handleCollateralTypesData])
+  }, [provider, contextData.fiat, handleCollateralTypesData])
 
   React.useEffect(() => {
     if (!provider || contextData.fiat || connector) return;
@@ -450,7 +441,7 @@ const Home: NextPage = () => {
               <>
                 <PositionsTable
                   contextData={contextData}
-                  collateralTypesData={collateralTypesData}
+                  collateralTypesData={collateralTypesData ?? []}
                   positionsData={positionsData}
                   onSelectPosition={(positionId) => {
                     setSelectedPositionId(positionId);
@@ -464,7 +455,7 @@ const Home: NextPage = () => {
       </Container>
       <Container lg>
         <CollateralTypesTable
-          collateralTypesData={collateralTypesData}
+          collateralTypesData={collateralTypesData ?? []}
           positionsData={positionsData}
           onSelectCollateralType={(collateralTypeId) => {
             // If user has an existing position for the collateral type then open PositionModal instead

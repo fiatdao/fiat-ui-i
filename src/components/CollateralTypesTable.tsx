@@ -32,7 +32,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
     setSortedData(data);
   }, [props.collateralTypesData, props.positionsData, sortProps.direction])
 
-  if (props.collateralTypesData.length === 0) return null;
+  if (!props.collateralTypesData || props.collateralTypesData.length === 0) return null;
 
   return (
     <>
