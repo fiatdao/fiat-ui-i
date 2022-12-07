@@ -5,9 +5,9 @@ import {
   earnableRateToAPY, encodeCollateralTypeId, floor2, formatUnixTimestamp,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
 } from '../utils';
+import useCollateralTypesData from '../stores/collateralDataTypesStore';
 
 interface CollateralTypesTableProps {
-  collateralTypesData: Array<any>,
   positionsData: Array<any>,
   onSelectCollateralType: (collateralTypeId: string) => void
 }
@@ -16,8 +16,10 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({ column: 'Maturity', direction: 'descending' });
   
+  const { collateralTypesData } = useCollateralTypesData();
+
   React.useEffect(() => {
-    const data = [...props.collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
+    const data = [...collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
       if (props.positionsData.find((position) => addressEq(position.vault, vault) && position.tokenId == tokenId)) {
         return false;
       }
@@ -30,9 +32,9 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
       return a.properties.maturity.toNumber() > b.properties.maturity.toNumber() ? 1 : -1
     });
     setSortedData(data);
-  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
+  }, [collateralTypesData, props.positionsData, sortProps.direction])
 
-  if (props.collateralTypesData.length === 0) return null;
+  if (collateralTypesData.length === 0) return null;
 
   return (
     <>

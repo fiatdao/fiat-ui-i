@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, Col, Row, SortDescriptor, Table, Text, User } from '@nextui-org/react';
 import { computeCollateralizationRatio, WAD, wadToDec } from '@fiatdao/sdk';
-
+import useCollateralTypesData from '../stores/collateralDataTypesStore';
 import {
   encodePositionId, floor2, formatUnixTimestamp, getCollateralTypeData,
   interestPerSecondToAPY, interestPerSecondToRateUntilMaturity
@@ -10,7 +10,6 @@ import { ethers } from 'ethers';
 
 interface PositionsTableProps {
   contextData: any,
-  collateralTypesData: Array<any>,
   positionsData: Array<any>,
   onSelectPosition: (positionId: string) => void
 }
@@ -22,14 +21,16 @@ export const PositionsTable = (props: PositionsTableProps) => {
     direction: 'descending'
   });
 
+  const { collateralTypesData } = useCollateralTypesData();
+
   React.useEffect(() => {
     const data = [...props.positionsData]
     data.sort((a: any, b: any) : number => {
-      if (!props.collateralTypesData || !a || !b) return 0;
+      if (!collateralTypesData || !a || !b) return 0;
       const { vault: vaultA, tokenId: tokenIdA } = a;
       const { vault: vaultB, tokenId: tokenIdB } = b;
-      const dataA = getCollateralTypeData(props.collateralTypesData, vaultA, tokenIdA);
-      const dataB = getCollateralTypeData(props.collateralTypesData, vaultB, tokenIdB);
+      const dataA = getCollateralTypeData(collateralTypesData, vaultA, tokenIdA);
+      const dataB = getCollateralTypeData(collateralTypesData, vaultB, tokenIdB);
       if (!dataA || !dataB) return 0;
       if (sortProps.direction === 'descending' ) {
         return dataA.properties.maturity.toNumber() < dataB.properties.maturity.toNumber() ? 1 : -1
@@ -37,9 +38,9 @@ export const PositionsTable = (props: PositionsTableProps) => {
       return dataA.properties.maturity.toNumber() > dataB.properties.maturity.toNumber() ? 1 : -1
     });
     setSortedData(data);
-  }, [props.collateralTypesData, props.positionsData, sortProps.direction])
+  }, [collateralTypesData, props.positionsData, sortProps.direction])
 
-  if (props.positionsData === null || props.positionsData.length === 0 || props.collateralTypesData.length === 0) {
+  if (props.positionsData === null || props.positionsData.length === 0 || collateralTypesData.length === 0) {
     // TODO
     // return <Loading />;
     return null;
@@ -58,7 +59,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
         }
         sortDescriptor={sortProps as SortDescriptor}
         disabledKeys={sortedData.filter(({ vault, tokenId }) => (
-          getCollateralTypeData(props.collateralTypesData, vault, tokenId) === undefined
+          getCollateralTypeData(collateralTypesData, vault, tokenId) === undefined
         )).map(({ vault, tokenId, owner }) => encodePositionId(vault, tokenId, owner))}
         onSortChange={(data) => {
           setSortProps({
@@ -79,7 +80,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
           {
             sortedData.map((position) => {
               const { owner, vault, tokenId, collateral, normalDebt } = position;
-              const collateralTypeData = getCollateralTypeData(props.collateralTypesData, vault, tokenId);
+              const collateralTypeData = getCollateralTypeData(collateralTypesData, vault, tokenId);
               if (collateralTypeData === undefined) {
                 return (
                   <Table.Row key={encodePositionId(vault, tokenId, owner)}>
