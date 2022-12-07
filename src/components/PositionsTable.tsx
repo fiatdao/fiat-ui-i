@@ -21,7 +21,7 @@ export const PositionsTable = (props: PositionsTableProps) => {
     direction: 'descending'
   });
 
-  const { collateralTypesData } = useCollateralTypesData();
+  const collateralTypesData = useCollateralTypesData((state) => state.collateralTypesData);
 
   React.useEffect(() => {
     const data = [...props.positionsData]

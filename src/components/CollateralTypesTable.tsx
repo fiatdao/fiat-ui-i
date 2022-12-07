@@ -16,7 +16,7 @@ export const CollateralTypesTable = (props: CollateralTypesTableProps) => {
   const [sortedData, setSortedData] = React.useState<any[]>([]);
   const [sortProps, setSortProps] = React.useState<SortDescriptor>({ column: 'Maturity', direction: 'descending' });
   
-  const { collateralTypesData } = useCollateralTypesData();
+  const collateralTypesData = useCollateralTypesData((state) => state.collateralTypesData);
 
   React.useEffect(() => {
     const data = [...collateralTypesData].filter(({ properties: { vault, tokenId } }) => {
