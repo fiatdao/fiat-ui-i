@@ -142,12 +142,16 @@ export const CreateForm = ({
           <Grid>
             <Input
               disabled={disableActions}
-              value={floor2(scaleToDec(borrowStore.createState.underlier, underlierScale))}
+              // value={['0.0']}
+              // TODO: swap out next ui for inputs. To make this a controlled component, requires passing an array of strings. wtf next ui?
+              value={[floor2(scaleToDec(borrowStore.createState.underlier, underlierScale)).toString()]}
               onChange={(event) => {
+                console.log('onchange e: ', event)
                 borrowStore.createActions.setUnderlier(
                   contextData.fiat, event.target.value, modifyPositionData);
               }}
               placeholder='0'
+              pattern="/^\d*\.?\d*$/"
               inputMode='decimal'
               label={'Underlier to swap'}
               labelRight={underlierSymbol}
