@@ -16,7 +16,7 @@ const links = [
   },
   {
     text: 'Discord',
-    url: 'https://discord.gg/fiatdao',
+    url: 'https://discord.gg/5JqBMtc4fm',
   },
   {
     text: 'Governance',

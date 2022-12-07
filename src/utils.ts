@@ -6,6 +6,10 @@ export const formatUnixTimestamp = (unixTimestamp: BigNumberish): string => {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
+export function minCollRatioWithBuffer(liquidationRatio: BigNumber): BigNumber {
+  return liquidationRatio.add(decToWad(0.025));
+}
+
 export function floor2(dec: BigNumberish): number {
   return Math.floor(Number(String(dec)) * 100) / 100;
 }

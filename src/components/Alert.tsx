@@ -11,7 +11,8 @@ export const Alert = ({ severity, message }: { severity: 'error' | 'warning', me
         width: '100%',
         border: `1px solid var(--nextui-colors-${severity})`,
         borderRadius: 'var(--nextui-radii-md)',
-        padding: '.25rem 1rem .25rem 1rem',
+        padding: '.5rem 1rem .5rem 1rem',
+        overflow: 'auto',
       }}
     >
       <div

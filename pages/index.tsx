@@ -9,8 +9,7 @@ import { FIAT, WAD, wadToDec } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
 import { PositionsTable } from '../src/components/PositionsTable';
-import { CreatePositionModal } from '../src/components/CreatePositionModal';
-import { BorrowModal } from '../src/components/BorrowModal';
+import { PositionModal } from '../src/components/PositionModal/PositionModal';
 import {
   decodeCollateralTypeId, decodePositionId, encodePositionId, getCollateralTypeData, getPositionData
 } from '../src/utils';
@@ -251,9 +250,17 @@ const Home: NextPage = () => {
     try {
       setTransactionData({ action, status: 'sent' });
       // Dryrun every transaction first to catch and decode errors
-      useProxy
+      const dryrunResp = useProxy
         ? await fiat.dryrunViaProxy(contextData.proxies[0], contract, method, ...args)
         : await fiat.dryrun(contract, method, ...args);
+      if (!dryrunResp.success) {
+        const reason = dryrunResp.reason !== undefined ? 'Reason: ' + dryrunResp.reason + '.' : '';
+        const customError = dryrunResp.customError !== undefined ? 'Custom error: ' + dryrunResp.customError + '.' : '';
+        const error = dryrunResp.error !== undefined ? dryrunResp.error + '.' : '';
+        // Throw conglomerate error message to prevent sendAndWait from running and throwing a less user-friendly error
+        throw new Error(reason + customError + error);
+      }
+
       const resp = useProxy
         ? await fiat.sendAndWaitViaProxy(contextData.proxies[0], contract, method, ...args)
         : await fiat.sendAndWait(contract, method, ...args);
@@ -463,7 +470,7 @@ const Home: NextPage = () => {
           collateralTypesData={collateralTypesData}
           positionsData={positionsData}
           onSelectCollateralType={(collateralTypeId) => {
-            // If user has an existing position for the collateral type then open BorrowModal instead
+            // If user has an existing position for the collateral type then open PositionModal instead
             const { vault, tokenId } = decodeCollateralTypeId(collateralTypeId);
             const positionData = getPositionData(positionsData, vault, tokenId, contextData.proxies[0]);
             if (positionData !== undefined) {
@@ -478,30 +485,16 @@ const Home: NextPage = () => {
         />
       </Container>
 
-      <CreatePositionModal
-        createPosition={createPosition}
-        contextData={contextData}
-        disableActions={disableActions}
-        modifyPositionData={modifyPositionData}
-        selectedCollateralTypeId={selectedCollateralTypeId}
-        setUnderlierAllowanceForProxy={setUnderlierAllowanceForProxy}
-        unsetUnderlierAllowanceForProxy={unsetUnderlierAllowanceForProxy}
-        transactionData={transactionData}
-        open={(!!selectedCollateralTypeId && !!modifyPositionData)}
-        onClose={() => {
-          setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
-          setModifyPositionData(initialState.modifyPositionData);
-          borrowStore.reset();
-        }}
-      />
-
-      <BorrowModal
+      <PositionModal
         buyCollateralAndModifyDebt={buyCollateralAndModifyDebt}
         contextData={contextData}
+        createPosition={createPosition}
         disableActions={disableActions}
         modifyPositionData={modifyPositionData}
         redeemCollateralAndModifyDebt={redeemCollateralAndModifyDebt}
         sellCollateralAndModifyDebt={sellCollateralAndModifyDebt}
+        selectedPositionId={selectedPositionId}
+        selectedCollateralTypeId={selectedCollateralTypeId}
         setFIATAllowanceForProxy={setFIATAllowanceForProxy}
         unsetFIATAllowanceForProxy={unsetFIATAllowanceForProxy}
         setFIATAllowanceForMoneta={setFIATAllowanceForMoneta}
@@ -511,9 +504,10 @@ const Home: NextPage = () => {
         setTransactionStatus={(status) =>
           setTransactionData({ ...transactionData, status })
         }
-        open={(!!selectedPositionId)}
+        open={!!modifyPositionData && (!!selectedCollateralTypeId || !!selectedPositionId)}
         onClose={() => {
-          setSelectedPositionId(initialState.selectedCollateralTypeId);
+          setSelectedPositionId(initialState.selectedPositionId);
+          setSelectedCollateralTypeId(initialState.selectedCollateralTypeId);
           setModifyPositionData(initialState.modifyPositionData);
           borrowStore.reset();
         }}
