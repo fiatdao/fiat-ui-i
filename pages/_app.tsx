@@ -56,7 +56,10 @@ const nextLightTheme = createTheme({
     colors: {
       connectButtonBackground: '#FFF',
       connectButtonColor: '#25292e',
-    }
+    },
+    transitions:  {
+      default: 'all 125ms ease',
+    },
   }
 })
 const nextDarkTheme = createTheme({
@@ -64,7 +67,10 @@ const nextDarkTheme = createTheme({
   theme: {
     colors: {
       connectButtonBackground: '#1a1b1f'
-    }
+    },
+    transitions:  {
+      default: 'all 125ms ease',
+    },
   }
 })
 
