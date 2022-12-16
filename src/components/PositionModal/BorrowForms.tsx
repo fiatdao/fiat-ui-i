@@ -9,6 +9,7 @@ import { useBorrowStore } from '../../stores/borrowStore';
 import { commifyToDecimalPlaces, floor2, floor4, floor5, minCollRatioWithBuffer } from '../../utils';
 import { Alert } from '../Alert';
 import { InputLabelWithMax } from '../InputLabelWithMax';
+import { NumericInput } from '../NumericInput/NumericInput';
 import { PositionPreview } from './PositionPreview';
 
 export const CreateForm = ({
@@ -140,6 +141,18 @@ export const CreateForm = ({
           css={{ marginBottom: '1rem' }}
         >
           <Grid>
+
+            <NumericInput
+              onChange={(event) => {
+                borrowStore.createActions.setUnderlier(
+                  contextData.fiat, event.target.value, modifyPositionData);
+              }}
+              value={floor2(scaleToDec(borrowStore.createState.underlier, underlierScale)).toString()}
+              label={underlierSymbol}
+              placeholder='0'
+              style={{ width: '15rem' }}
+            />
+
             <Input
               disabled={disableActions}
               // value={['0.0']}
@@ -151,7 +164,6 @@ export const CreateForm = ({
                   contextData.fiat, event.target.value, modifyPositionData);
               }}
               placeholder='0'
-              pattern="/^\d*\.?\d*$/"
               inputMode='decimal'
               label={'Underlier to swap'}
               labelRight={underlierSymbol}
@@ -160,6 +172,7 @@ export const CreateForm = ({
               borderWeight='light'
               width='15rem'
             />
+
           </Grid>
           <Grid>
             <Input

@@ -1,0 +1,47 @@
+.InputField {
+}
+
+.InputField_Label {
+  display: block;
+  padding: 0 0 0 var(--nextui-space-2);
+  margin-bottom: var(--nextui-space-3);
+  font-size: var(--nextui-fontSizes-xs);
+}
+
+.InputField_InputContainer {
+  display: flex;
+  height: var(--nextui-space-12);
+  border-radius: var(--nextui-space-4);
+  transition: var(--nextui-transitions-default);
+  box-shadow: 0 0 0 1px var(--nextui-colors-border);
+}
+
+.InputField_InputContainer:hover {
+  box-shadow: 0 0 0 1px var(--nextui-colors-gray600);
+}
+
+.InputField_InputContainer:focus-within {
+  box-shadow: 0 0 0 1px var(--nextui-colors-gray900);
+}
+
+.InputField_Input {
+  width: 100%;
+  background-color: transparent;
+  border: none;
+  margin: var(--nextui-space-2) var(--nextui-space-5);
+  font-size: var(--nextui-fontSizes-xs);
+}
+
+.InputField_RightAdornment {
+  display: inline-flex;
+  font-weight: var(--nextui-fontWeights-medium);
+  width: initial;
+  height: 100%;
+  align-items: center;
+  pointer-events: none;
+  margin: 0px;
+  padding: 0 var(--nextui-space-sm) 0 0;
+  color: var(--nextui-colors-accents6);
+  font-size: var(--nextui-fontSizes-xs);
+  line-height: var(--nextui-lineHeights-xs);
+}
