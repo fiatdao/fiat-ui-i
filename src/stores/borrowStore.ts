@@ -22,7 +22,7 @@ interface BorrowState {
   formWarnings: string[];
   formErrors: string[];
   createState: {
-    underlier: BigNumber; // [underlierScale]
+    underlier: string;
     slippagePct: BigNumber; // [wad]
     targetedCollRatio: BigNumber; // [wad]
     collateral: BigNumber; // [wad]
@@ -173,7 +173,7 @@ const initialState = {
   formWarnings: [],
   formErrors: [],
   createState: {
-    underlier: ZERO,
+    underlier: '',
     slippagePct: decToWad('0.001'),
     targetedCollRatio: decToWad('1.2'),
     collateral: ZERO, // [wad]
@@ -239,17 +239,11 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
     */
     createActions: {
       setUnderlier: async (fiat, value, modifyPositionData) => {
-        const collateralType = modifyPositionData.collateralType;
-        const underlierScale = collateralType.properties.underlierScale;
-        const underlier = value === null || value === ''
-          ? initialState.createState.underlier
-          : decToScale(floor4(Number(value) < 0 ? 0 : Number(value)), underlierScale);
-
-          set((state) => ({
-            createState: { ...state.createState, underlier },
-            formDataLoading: true
-          }));
-          get().createActions.calculatePositionValuesAfterCreation(fiat, modifyPositionData);
+        set((state) => ({
+          createState: { ...state.createState, underlier: value },
+          formDataLoading: true
+        }));
+        get().createActions.calculatePositionValuesAfterCreation(fiat, modifyPositionData);
       },
 
       setSlippagePct: (fiat, value, modifyPositionData) => {
@@ -284,18 +278,23 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
         const { slippagePct, underlier } = get().createState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
+        // Perform a `floor4` on underlier to deposit internally because the contracts do a similar truncation
+        // This makes the estimated outputs more accurate
+        const underlierBN = underlier === null
+          ? initialState.increaseState.underlier
+          : decToScale(floor4(Number(underlier) < 0 ? 0 : Number(underlier)), underlierScale);
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
           let deltaCollateral = ZERO;
-          if (!underlier.isZero()) {
+          if (!underlierBN.isZero()) {
             try {
-              // Preview underlier to collateral token swap
-              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
+              // Preview underlierBN to collateral token swap
+              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlierBN, collateralType);
               // redemption price with a 1:1 exchange rate
-              const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
+              const minTokensOut = underlierBN.mul(tokenScale).div(underlierScale);
               // apply slippagePct to preview
               const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
               // assert: minTokensOut > idealTokenOut
