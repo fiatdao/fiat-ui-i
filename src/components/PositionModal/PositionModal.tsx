@@ -1,6 +1,6 @@
 import { Modal, Navbar, Text } from '@nextui-org/react';
 import 'antd/dist/antd.css';
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import React, { useState } from 'react';
 import { TransactionStatus } from '../../../pages';
 import { formatUnixTimestamp } from '../../utils';
@@ -15,6 +15,7 @@ const enum Mode {
 }
 
 interface PositionModalProps {
+  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumberish) => any;
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
@@ -22,7 +23,7 @@ interface PositionModalProps {
   setFIATAllowanceForMoneta: (fiat: any) => any;
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   unsetFIATAllowanceForProxy: (fiat: any) => any;
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
+  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumberish) => any;
   unsetUnderlierAllowanceForProxy: (fiat: any) => any;
   setTransactionStatus: (status: TransactionStatus) => void;
   contextData: any;
@@ -137,7 +138,7 @@ const PositionModalBody = (props: PositionModalProps) => {
               buyCollateralAndModifyDebt={props.buyCollateralAndModifyDebt}
               setUnderlierAllowanceForProxy={props.setUnderlierAllowanceForProxy}
               unsetUnderlierAllowanceForProxy={props.unsetUnderlierAllowanceForProxy}
-              
+
             />
           : !!props.selectedPositionId && actionMode === Mode.DECREASE
           ? <LeverDecreaseForm

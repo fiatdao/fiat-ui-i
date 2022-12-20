@@ -11,7 +11,7 @@ import {
   wadToScale,
   ZERO,
 } from '@fiatdao/sdk';
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import create from 'zustand';
 import * as userActions from '../actions';
 import { debounce, floor2, floor4, minCollRatioWithBuffer } from '../utils';
@@ -22,7 +22,7 @@ interface BorrowState {
   formWarnings: string[];
   formErrors: string[];
   createState: {
-    underlier: string;
+    underlier: BigNumberish;
     slippagePct: BigNumber; // [wad]
     targetedCollRatio: BigNumber; // [wad]
     collateral: BigNumber; // [wad]
@@ -278,11 +278,9 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
         const { slippagePct, underlier } = get().createState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
-        // Perform a `floor4` on underlier to deposit internally because the contracts do a similar truncation
-        // This makes the estimated outputs more accurate
         const underlierBN = underlier === null
           ? initialState.increaseState.underlier
-          : decToScale(floor4(Number(underlier) < 0 ? 0 : Number(underlier)), underlierScale);
+          : decToScale(Number(underlier) < 0 ? 0 : Number(underlier), underlierScale);
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));

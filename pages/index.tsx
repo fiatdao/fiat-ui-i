@@ -4,7 +4,7 @@ import { useAccount, useNetwork, useProvider } from 'wagmi';
 import shallow from 'zustand/shallow'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { Container, Spacer } from '@nextui-org/react';
-import { BigNumber, ContractReceipt, ethers } from 'ethers';
+import { BigNumber, BigNumberish, ContractReceipt, ethers } from 'ethers';
 import { FIAT, WAD, wadToDec } from '@fiatdao/sdk';
 import { HeaderBar } from '../src/components/HeaderBar';
 import { CollateralTypesTable } from '../src/components/CollateralTypesTable';
@@ -294,10 +294,10 @@ const Home: NextPage = () => {
     setContextData({ ...contextData, proxies: [proxyAddress] });
   }
 
-  const setUnderlierAllowanceForProxy = async (fiat: any, amount: BigNumber) => {
+  const setUnderlierAllowanceForProxy = async (fiat: any, amount: BigNumberish) => {
     const token = fiat.getERC20Contract(modifyPositionData.collateralType.properties.underlierToken);
     // add 1 unit has a buffer in case user refreshes the page and the value becomes outdated
-    const allowance = amount.add(modifyPositionData.collateralType.properties.underlierScale);
+    const allowance = BigNumber.from(amount).add(modifyPositionData.collateralType.properties.underlierScale);
     const response = await sendTransaction(
       fiat, false, 'setUnderlierAllowanceForProxy', token, 'approve', contextData.proxies[0], allowance
     );
@@ -345,7 +345,7 @@ const Home: NextPage = () => {
     addRecentTransaction({ hash: response.transactionHash, description: 'Reset FIAT allowance for Proxy' });
   }
 
-  const createPosition = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => {
+  const createPosition = async (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumberish) => {
     const args = userActions.buildBuyCollateralAndModifyDebtArgs(
       contextData, modifyPositionData.collateralType, deltaCollateral, deltaDebt, underlier
     );

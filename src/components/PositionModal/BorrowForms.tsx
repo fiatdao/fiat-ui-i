@@ -2,7 +2,7 @@ import { scaleToDec, wadToDec } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
-import { BigNumber, ethers } from 'ethers';
+import { BigNumber, BigNumberish, ethers } from 'ethers';
 import React, {useMemo} from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../stores/borrowStore';
@@ -29,8 +29,8 @@ export const CreateForm = ({
   transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
-  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
+  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumberish) => any;
+  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumberish) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
   const { proxies } = contextData;
@@ -141,20 +141,18 @@ export const CreateForm = ({
           css={{ marginBottom: '1rem' }}
         >
           <Grid>
-
             <NumericInput
               disabled={disableActions}
               onChange={(event) => {
                 borrowStore.createActions.setUnderlier(
                   contextData.fiat, event.target.value, modifyPositionData);
               }}
-              value={borrowStore.createState.underlier}
+              value={borrowStore.createState.underlier.toString()}
               label={'Underlier to swap'}
               placeholder='0'
               style={{ width: '15rem' }}
               rightAdornment={underlierSymbol}
             />
-
           </Grid>
           <Grid>
             <Input
@@ -305,7 +303,7 @@ export const CreateForm = ({
           // @ts-ignore
           checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(borrowStore.createState.underlier) ?? false}
           onChange={async () => {
-            if (!borrowStore.createState.underlier.isZero() && underlierAllowance?.gte(borrowStore.createState.underlier)) {
+            if (!(borrowStore.createState.underlier === '0' || borrowStore.createState.underlier === '') && underlierAllowance?.gte(borrowStore.createState.underlier)) {
               try {
                 setSubmitError('');
                 await unsetUnderlierAllowanceForProxy(contextData.fiat);
@@ -338,7 +336,8 @@ export const CreateForm = ({
             borrowStore.formWarnings.length !== 0 ||
             disableActions ||
             !hasProxy ||
-            borrowStore.createState.underlier?.isZero() ||
+            borrowStore.createState.underlier === '' ||
+            borrowStore.createState.underlier === '0' ||
             borrowStore.createState.deltaCollateral?.isZero() ||
             underlierAllowance?.lt(borrowStore.createState.underlier) ||
             monetaDelegate === false

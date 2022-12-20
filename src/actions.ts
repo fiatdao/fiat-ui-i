@@ -1,5 +1,5 @@
 import { debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
-import { BigNumber, Contract } from 'ethers';
+import { BigNumber, BigNumberish, Contract } from 'ethers';
 
 export const underlierToCollateralToken = async (
   fiat: any,
@@ -230,7 +230,7 @@ export const buildBuyCollateralAndModifyDebtArgs = (
   collateralTypeData: any,
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
-  underlier: BigNumber
+  underlier: BigNumberish
 ): { contract: Contract, methodName: string, methodArgs: any[] } => {
   const { vaultEPTActions, vaultFCActions, vaultFYActions, vaultSPTActions } = contextData.fiat.getContracts();
   const { properties } = collateralTypeData;
