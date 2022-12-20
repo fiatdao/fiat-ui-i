@@ -1,4 +1,4 @@
-import { scaleToDec, wadToDec } from '@fiatdao/sdk';
+import { decToScale, decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
@@ -59,6 +59,10 @@ export const CreateForm = ({
       []
     ), shallow
   );
+
+  const underlierBN = useMemo(() => {
+    return borrowStore.createState.underlier === '' ? ZERO : decToScale(borrowStore.createState.underlier, underlierScale)
+  }, [borrowStore.createState.underlier, underlierScale])
 
   const [submitError, setSubmitError] = React.useState('');
 
@@ -297,9 +301,9 @@ export const CreateForm = ({
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(borrowStore.createState.underlier) ?? false}
+          checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(underlierBN) ?? false}
           onChange={async () => {
-            if (!(borrowStore.createState.underlier === '0' || borrowStore.createState.underlier === '') && underlierAllowance?.gte(borrowStore.createState.underlier)) {
+            if (!underlierBN.isZero() && underlierAllowance?.gte(underlierBN)) {
               try {
                 setSubmitError('');
                 await unsetUnderlierAllowanceForProxy(contextData.fiat);
@@ -309,7 +313,7 @@ export const CreateForm = ({
             } else {
               try {
                 setSubmitError('');
-                await setUnderlierAllowanceForProxy(contextData.fiat, borrowStore.createState.underlier);
+                await setUnderlierAllowanceForProxy(contextData.fiat, underlierBN);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -332,10 +336,9 @@ export const CreateForm = ({
             borrowStore.formWarnings.length !== 0 ||
             disableActions ||
             !hasProxy ||
-            borrowStore.createState.underlier === '' ||
-            borrowStore.createState.underlier === '0' ||
+            underlierBN.isZero() ||
             borrowStore.createState.deltaCollateral?.isZero() ||
-            underlierAllowance?.lt(borrowStore.createState.underlier) ||
+            underlierAllowance?.lt(underlierBN) ||
             monetaDelegate === false
           }
           icon={(disableActions && currentTxAction === 'createPosition') ? (<Loading size='xs' />) : null}
@@ -343,7 +346,7 @@ export const CreateForm = ({
             try {
               setSubmitError('');
               await createPosition(
-                borrowStore.createState.deltaCollateral, borrowStore.createState.deltaDebt, borrowStore.createState.underlier
+                borrowStore.createState.deltaCollateral, borrowStore.createState.deltaDebt, underlierBN
               );
               onClose();
             } catch (e: any) {
