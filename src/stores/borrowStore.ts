@@ -274,7 +274,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         // Convert user inputs from strings to BigNumbers
         const underlierBN = underlier === null || underlier === ''
           ? ZERO
-          : decToScale(Number(underlier) < 0 ? 0 : Number(underlier), underlierScale);
+          : decToScale(underlier, underlierScale);
 
         const ceiled = Number(slippagePct) < 0 ? 0 : Number(slippagePct) > 50 ? 50 : Number(slippagePct);
         const slippageBN = decToWad(ceiled / 100);
@@ -410,14 +410,14 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         // Convert user inputs from strings to BigNumbers
         const underlierBN = underlier === null || underlier === ''
           ? ZERO
-          : decToScale(Number(underlier) < 0 ? 0 : Number(underlier), underlierScale);
+          : decToScale(underlier, underlierScale);
 
         const ceiled = Number(slippagePct) < 0 ? 0 : Number(slippagePct) > 50 ? 50 : Number(slippagePct);
         const slippageBN = decToWad(ceiled / 100);
 
         const deltaDebtBN = deltaDebt === null || deltaDebt === ''
           ? ZERO
-          : decToWad(Number(deltaDebt) < 0 ? 0 : Number(deltaDebt));
+          : decToWad(deltaDebt);
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
