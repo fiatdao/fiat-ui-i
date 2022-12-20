@@ -155,21 +155,17 @@ export const CreateForm = ({
             />
           </Grid>
           <Grid>
-            <Input
+            <NumericInput
               disabled={disableActions}
-              value={floor2(Number(wadToDec(borrowStore.createState.slippagePct)) * 100)}
               onChange={(event) => {
                 borrowStore.createActions.setSlippagePct(contextData.fiat, event.target.value, modifyPositionData);
               }}
-              step='0.01'
-              placeholder='0'
+              value={borrowStore.createState.slippagePct.toString()}
+              placeholder='0.01'
               inputMode='decimal'
               label='Slippage'
-              labelRight={'%'}
-              bordered
-              size='sm'
-              borderWeight='light'
-              width='7.5rem'
+              rightAdornment={'%'}
+              style={{ width: '7.5rem' }}
             />
           </Grid>
         </Grid.Container>
