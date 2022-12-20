@@ -33,8 +33,8 @@ interface BorrowState {
     // TODO: give its own form errors and warning
   };
   increaseState: {
-    underlier: BigNumber; // [underlierScale]
-    slippagePct: BigNumber; // [wad]
+    underlier: BigNumberish; // [underlierScale]
+    slippagePct: BigNumberish; // [wad]
     collateral: BigNumber; // [wad]
     collRatio: BigNumber; // [wad] estimated new collateralization ratio
     debt: BigNumber; // [wad]
@@ -183,8 +183,8 @@ const initialState = {
     deltaDebt: ZERO, // [wad]
   },
   increaseState: {
-    underlier: ZERO,
-    slippagePct: decToWad('0.001'),
+    underlier: '',
+    slippagePct: '0.01',
     targetedCollRatio: decToWad('1.2'),
     collateral: ZERO, // [wad]
     collRatio: ZERO, // [wad] estimated new collateralization ratio
@@ -279,7 +279,6 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         const ceiled = Number(slippagePct) < 0 ? 0 : Number(slippagePct) > 50 ? 50 : Number(slippagePct);
         const slippageBN = decToWad(ceiled / 100);
 
-
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
@@ -367,14 +366,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
 
     increaseActions: {
       setUnderlier: async (fiat, value, modifyPositionData) => {
-        const collateralType = modifyPositionData.collateralType;
-        const underlierScale = collateralType.properties.underlierScale;
-        const underlier = value === null || value === ''
-          ? initialState.increaseState.underlier
-          : decToScale(floor4(Number(value) < 0 ? 0 : Number(value)), underlierScale);
-
         set((state) => ({
-          increaseState: { ...state.increaseState, underlier },
+          increaseState: { ...state.increaseState, underlier: value },
           formDataLoading: true,
         }));
         get().increaseActions.calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
@@ -385,16 +378,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         value,
         modifyPositionData,
       ) => {
-        let newSlippage: BigNumber;
-        if (value === null || value === '') {
-          newSlippage = initialState.increaseState.slippagePct;
-        } else {
-          const ceiled = Number(value) < 0 ? 0 : Number(value) > 50 ? 50 : Number(value);
-          newSlippage = decToWad(floor4(ceiled / 100));
-        }
-
         set((state) => ({
-          increaseState: { ...state.increaseState, slippagePct: newSlippage },
+          increaseState: { ...state.increaseState, slippagePct: value },
           formDataLoading: true,
         }));
         get().increaseActions.calculatePositionValuesAfterIncrease(fiat, modifyPositionData);
@@ -426,24 +411,32 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         const { slippagePct, underlier } = get().increaseState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
+        // Convert user inputs from strings to BigNumbers
+        const underlierBN = underlier === null || underlier === ''
+          ? ZERO
+          : decToScale(Number(underlier) < 0 ? 0 : Number(underlier), underlierScale);
+
+        const ceiled = Number(slippagePct) < 0 ? 0 : Number(slippagePct) > 50 ? 50 : Number(slippagePct);
+        const slippageBN = decToWad(ceiled / 100);
+
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
 
         try {
           let deltaCollateral = ZERO;
-          if (!underlier.isZero()) {
+          if (!underlierBN.isZero()) {
             try {
               // Preview underlier to collateral token swap
-              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlier, collateralType);
+              const tokensOut = await userActions.underlierToCollateralToken(fiat, underlierBN, collateralType);
               // redemption price with a 1:1 exchange rate
-              const minTokensOut = underlier.mul(tokenScale).div(underlierScale);
+              const minTokensOut = underlierBN.mul(tokenScale).div(underlierScale);
               // apply slippagePct to preview
-              const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippagePct)).div(WAD);
+              const tokensOutWithSlippage = tokensOut.mul(WAD.sub(slippageBN)).div(WAD);
               // assert: minTokensOut > idealTokenOut
               if (tokensOutWithSlippage.lt(minTokensOut)) set(() => (
                 { formWarnings: ['Large Price Impact (Negative Yield)'] }
               ));
-              deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippagePct)).div(WAD);
+              deltaCollateral = scaleToWad(tokensOut, tokenScale).mul(WAD.sub(slippageBN)).div(WAD);
             } catch (e: any) {
               if (e.reason && e.reason === 'BAL#001') {
                 // Catch balancer-specific underflow error
