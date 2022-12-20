@@ -39,7 +39,7 @@ interface BorrowState {
     collRatio: BigNumber; // [wad] estimated new collateralization ratio
     debt: BigNumber; // [wad]
     deltaCollateral: BigNumber; // [wad]
-    deltaDebt: BigNumber; // [wad]
+    deltaDebt: BigNumberish; // [wad]
   };
   decreaseState: {
     underlier: BigNumber; // [underlierScale]
@@ -190,7 +190,7 @@ const initialState = {
     collRatio: ZERO, // [wad] estimated new collateralization ratio
     debt: ZERO, // [wad]
     deltaCollateral: ZERO,
-    deltaDebt: ZERO, // [wad]
+    deltaDebt: '', // [wad]
   },
   decreaseState: {
     underlier: ZERO,
@@ -390,14 +390,10 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         value,
         modifyPositionData,
       ) => {
-        let newDeltaDebt: BigNumber;
-        if (value === null || value === '') newDeltaDebt = initialState.increaseState.deltaDebt;
-        else newDeltaDebt = decToWad(floor4(Number(value) < 0 ? 0 : Number(value)));
-
         set((state) => ({
           increaseState: {
             ...state.increaseState,
-            deltaDebt: newDeltaDebt,
+            deltaDebt: value,
           },
           formDataLoading: true
         }));
@@ -408,7 +404,7 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         const { collateralType, position } = modifyPositionData;
         const { tokenScale, underlierScale } = collateralType.properties;
         const { codex: { debtFloor }, collybus: { liquidationRatio } } = collateralType.settings;
-        const { slippagePct, underlier } = get().increaseState;
+        const { deltaDebt, slippagePct, underlier } = get().increaseState;
         const { codex: { virtualRate: rate }, collybus: { fairPrice } } = collateralType.state;
 
         // Convert user inputs from strings to BigNumbers
@@ -418,6 +414,10 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
 
         const ceiled = Number(slippagePct) < 0 ? 0 : Number(slippagePct) > 50 ? 50 : Number(slippagePct);
         const slippageBN = decToWad(ceiled / 100);
+
+        const deltaDebtBN = deltaDebt === null || deltaDebt === ''
+          ? ZERO
+          : decToWad(Number(deltaDebt) < 0 ? 0 : Number(deltaDebt));
 
         // Reset form errors and warnings on new input
         set(() => ({ formWarnings: [], formErrors: [] }));
@@ -448,9 +448,8 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           }
 
           // Estimate new position values based on deltaDebt, taking into account an existing position's collateral
-          const { deltaDebt } = get().increaseState;
           const collateral = position.collateral.add(deltaCollateral);
-          const debt = normalDebtToDebt(position.normalDebt, rate).add(deltaDebt);
+          const debt = normalDebtToDebt(position.normalDebt, rate).add(deltaDebtBN);
           const normalDebt = debtToNormalDebt(debt, rate);
           const collRatio = computeCollateralizationRatio(collateral, fairPrice, normalDebt, rate);
           const minCollRatio = liquidationRatio.add(decToWad(0.025));
@@ -480,7 +479,6 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
               collRatio: ZERO,
               debt: ZERO,
               deltaCollateral: ZERO,
-              deltaDebt: ZERO,
             },
             formDataLoading: false,
             formErrors: [...get().formErrors, e.message],

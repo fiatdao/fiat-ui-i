@@ -400,6 +400,10 @@ export const IncreaseForm = ({
     return borrowStore.increaseState.underlier === '' ? ZERO : decToScale(borrowStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale)
   }, [borrowStore.increaseState.underlier, modifyPositionData.collateralType.properties.underlierScale])
 
+  const deltaDebtBN = useMemo(() => {
+    return borrowStore.increaseState.deltaDebt === '' ? ZERO : decToWad(borrowStore.increaseState.deltaDebt)
+  }, [borrowStore.increaseState.deltaDebt])
+
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
@@ -467,19 +471,15 @@ export const IncreaseForm = ({
           style={{ width: '7.5rem' }}
         />
       </Grid.Container>
-      <Input
+      <NumericInput
         disabled={disableActions}
-        value={floor5(wadToDec(borrowStore.increaseState.deltaDebt))}
+        value={borrowStore.increaseState.deltaDebt.toString()}
         onChange={(event) => {
-          borrowStore.increaseActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
+          borrowStore.increaseActions.setDeltaDebt(contextData.fiat, event.target.value, modifyPositionData);
         }}
         placeholder='0'
-        inputMode='decimal'
         label={'FIAT to borrow'}
-        labelRight={'FIAT'}
-        bordered
-        size='sm'
-        borderWeight='light'
+        rightAdornment={'FIAT'}
       />
     </Modal.Body>
 
@@ -567,7 +567,7 @@ export const IncreaseForm = ({
             if (disableActions || !hasProxy) return true;
             if (borrowStore.formErrors.length !== 0 || borrowStore.formWarnings.length !== 0) return true;
             if (modifyPositionData.monetaDelegate === false) return true;
-            if (underlierBN.isZero() && borrowStore.increaseState.deltaDebt.isZero()) return true;
+            if (underlierBN.isZero() && deltaDebtBN.isZero()) return true;
             if (!underlierBN.isZero() && modifyPositionData.underlierAllowance.lt(underlierBN)) return true;
             return false;
           })()}
@@ -583,7 +583,7 @@ export const IncreaseForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await buyCollateralAndModifyDebt(borrowStore.increaseState.deltaCollateral, borrowStore.increaseState.deltaDebt, underlierBN);
+              await buyCollateralAndModifyDebt(borrowStore.increaseState.deltaCollateral, deltaDebtBN, underlierBN);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
