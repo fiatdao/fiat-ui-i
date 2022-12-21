@@ -183,8 +183,8 @@ const initialState = {
     collateral: ZERO, // [wad]
     collRatio: ZERO, // [wad] estimated new collateralization ratio
     debt: ZERO, // [wad]
-    deltaCollateral: ZERO,
-    deltaDebt: ZERO, // [wad]
+    deltaCollateral: '',
+    deltaDebt: '', // [wad]
   },
 };
 
