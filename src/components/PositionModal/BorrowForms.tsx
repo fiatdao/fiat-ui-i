@@ -907,6 +907,14 @@ export const RedeemForm = ({
     ), shallow
   );
 
+  const deltaCollateralBN = useMemo(() => {
+    return borrowStore.redeemState.deltaCollateral === '' ? ZERO : decToWad(borrowStore.redeemState.deltaCollateral)
+  }, [borrowStore.redeemState.deltaCollateral])
+
+  const deltaDebtBN = useMemo(() => {
+    return borrowStore.redeemState.deltaDebt === '' ? ZERO : decToWad(borrowStore.redeemState.deltaDebt)
+  }, [borrowStore.redeemState.deltaDebt])
+
   const hasProxy = contextData.proxies.length > 0;
   const { action: currentTxAction } = transactionData;
   
@@ -944,41 +952,27 @@ export const RedeemForm = ({
           wrap='wrap'
           css={{ marginBottom: '1rem' }}
         >
-          <Input
+          <NumericInput
             disabled={disableActions}
-            value={floor2(wadToDec(borrowStore.redeemState.deltaCollateral))}
+            value={borrowStore.redeemState.deltaCollateral.toString()}
             onChange={(event) => {
               borrowStore.redeemActions.setDeltaCollateral(contextData.fiat, event.target.value, modifyPositionData);
             }}
             placeholder='0'
-            inputMode='decimal'
-            // Bypass type warning from passing a custom component instead of a string
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => borrowStore.redeemActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)} /> }
-            labelRight={modifyPositionData.collateralType.metadata.symbol}
-            bordered
-            size='sm'
-            borderWeight='light'
-            width={'100%'}
+            label={<InputLabelWithMax label='Collateral to withdraw and redeem' onMaxClick={() => borrowStore.redeemActions.setDeltaCollateral(contextData.fiat, floor4(wadToDec(modifyPositionData.position.collateral)).toString(), modifyPositionData)} /> }
+            rightAdornment={modifyPositionData.collateralType.metadata.symbol}
+            style={{ width: '100%' }}
           />
         </Grid.Container>
-        <Input
+        <NumericInput
           disabled={disableActions}
-          value={floor5(wadToDec(borrowStore.redeemState.deltaDebt))}
+          value={borrowStore.redeemState.deltaDebt.toString()}
           onChange={(event) => {
             borrowStore.redeemActions.setDeltaDebt(contextData.fiat, event.target.value,modifyPositionData);
           }}
           placeholder='0'
-          inputMode='decimal'
-          // Bypass type warning from passing a custom component instead of a string
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => borrowStore.redeemActions.setMaxDeltaDebt(contextData.fiat, modifyPositionData)} />}
-          labelRight={'FIAT'}
-          bordered
-          size='sm'
-          borderWeight='light'
+          label={<InputLabelWithMax label='FIAT to pay back' onMaxClick={() => borrowStore.redeemActions.setDeltaDebt(contextData.fiat, floor4(wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate))).toString(), modifyPositionData)} />}
+          rightAdornment={'FIAT'}
         />
         <Text size={'$sm'}>
           Note: When closing your position make sure you have enough FIAT to cover the accrued borrow fees.
@@ -1009,9 +1003,9 @@ export const RedeemForm = ({
           // Next UI Switch `checked` type is wrong, this is necessary
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(borrowStore.redeemState.deltaDebt) ?? false)}
+          checked={() => (modifyPositionData.proxyFIATAllowance?.gt(0) && modifyPositionData.proxyFIATAllowance?.gte(deltaDebtBN) ?? false)}
           onChange={async () => {
-            if (borrowStore.redeemState.deltaDebt.gt(0) && modifyPositionData.proxyFIATAllowance.gte(borrowStore.redeemState.deltaDebt)) {
+            if (deltaDebtBN.gt(0) && modifyPositionData.proxyFIATAllowance.gte(deltaDebtBN)) {
               try {
                 setSubmitError('');
                 await unsetFIATAllowanceForProxy(contextData.fiat);
@@ -1021,7 +1015,7 @@ export const RedeemForm = ({
             } else {
               try {
                 setSubmitError('');
-                await setFIATAllowanceForProxy(contextData.fiat, borrowStore.redeemState.deltaDebt);
+                await setFIATAllowanceForProxy(contextData.fiat, deltaDebtBN);
               } catch (e: any) {
                 setSubmitError(e.message);
               }
@@ -1037,14 +1031,14 @@ export const RedeemForm = ({
 
         <Spacer y={3} />
 
-        {modifyPositionData.monetaFIATAllowance?.lt(borrowStore.redeemState.deltaDebt) && (
+        {modifyPositionData.monetaFIATAllowance?.lt(deltaDebtBN) && (
           <>
             <Spacer y={3} />
             <Button
               css={{ minWidth: '100%' }}
               disabled={(() => {
                 if (disableActions || !hasProxy) return true;
-                if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(borrowStore.redeemState.deltaDebt)) return true;
+                if (modifyPositionData.monetaFIATAllowance?.gt(0) && modifyPositionData.monetaFIATAllowance?.gte(deltaDebtBN)) return true;
                 return false;
               })()}
               icon={(['setFIATAllowanceForMoneta'].includes(currentTxAction || '') && disableActions)
@@ -1072,8 +1066,8 @@ export const RedeemForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (borrowStore.formErrors.length !== 0 || borrowStore.formWarnings.length !== 0) return true;
-            if (borrowStore.redeemState.deltaCollateral.isZero() && borrowStore.redeemState.deltaDebt.isZero()) return true;
-            if (!borrowStore.redeemState.deltaDebt.isZero() && modifyPositionData.monetaFIATAllowance?.lt(borrowStore.redeemState.deltaDebt)) return true;
+            if (deltaCollateralBN.isZero() && deltaDebtBN.isZero()) return true;
+            if (!deltaDebtBN.isZero() && modifyPositionData.monetaFIATAllowance?.lt(deltaDebtBN)) return true;
             return false;
           })()}
           icon={
@@ -1088,7 +1082,7 @@ export const RedeemForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await redeemCollateralAndModifyDebt(borrowStore.redeemState.deltaCollateral, borrowStore.redeemState.deltaDebt);
+              await redeemCollateralAndModifyDebt(deltaCollateralBN, deltaDebtBN);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
