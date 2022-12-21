@@ -2,7 +2,7 @@ import { decToScale, decToWad, normalDebtToDebt, scaleToDec, wadToDec, ZERO } fr
 import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
-import { BigNumber, BigNumberish, ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import React, {useMemo} from 'react';
 import shallow from 'zustand/shallow';
 import { useBorrowStore } from '../../stores/borrowStore';
@@ -29,8 +29,8 @@ export const CreateForm = ({
   transactionData: any,
   onClose: () => void,
   // TODO: refactor out into react query mutations / store actions
-  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumberish) => any;
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumberish) => any,
+  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
+  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any,
   unsetUnderlierAllowanceForProxy: (fiat: any) => any,
 }) => {
   const { proxies } = contextData;

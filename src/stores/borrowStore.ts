@@ -22,7 +22,7 @@ interface BorrowState {
   formWarnings: string[];
   formErrors: string[];
   createState: {
-    underlier: BigNumberish;
+    underlier: BigNumberish; // [underlierScale]
     slippagePct: BigNumberish; // [wad]
     targetedCollRatio: BigNumber; // [wad]
     collateral: BigNumber; // [wad]
@@ -47,7 +47,7 @@ interface BorrowState {
     collateral: BigNumber; // [wad]
     collRatio: BigNumber; // [wad] estimated new collateralization ratio
     debt: BigNumber; // [wad]
-    deltaCollateral: BigNumberish;
+    deltaCollateral: BigNumberish; // [wad]
     deltaDebt: BigNumberish; // [wad]
   };
   redeemState: {

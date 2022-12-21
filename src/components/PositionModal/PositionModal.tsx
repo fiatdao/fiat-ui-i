@@ -1,6 +1,6 @@
 import { Modal, Navbar, Text } from '@nextui-org/react';
 import 'antd/dist/antd.css';
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
 import React, { useState } from 'react';
 import { TransactionStatus } from '../../../pages';
 import { formatUnixTimestamp } from '../../utils';
@@ -15,14 +15,14 @@ const enum Mode {
 }
 
 interface PositionModalProps {
-  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumberish) => any;
+  createPosition: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   buyCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   sellCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber, underlier: BigNumber) => any;
   redeemCollateralAndModifyDebt: (deltaCollateral: BigNumber, deltaDebt: BigNumber) => any;
   setFIATAllowanceForMoneta: (fiat: any) => any;
   setFIATAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   unsetFIATAllowanceForProxy: (fiat: any) => any;
-  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumberish) => any;
+  setUnderlierAllowanceForProxy: (fiat: any, amount: BigNumber) => any;
   unsetUnderlierAllowanceForProxy: (fiat: any) => any;
   setTransactionStatus: (status: TransactionStatus) => void;
   contextData: any;
