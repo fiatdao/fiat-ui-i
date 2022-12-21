@@ -124,14 +124,6 @@ interface BorrowActions {
       value: string,
       modifyPositionData: any,
     ) => void;
-    setMaxDeltaCollateral: (
-      fiat: any,
-      modifyPositionData: any,
-    ) => void;
-    setMaxDeltaDebt: (
-      fiat: any,
-      modifyPositionData: any,
-    ) => void;
     calculatePositionValuesAfterDecrease: (
       fiat: any,
       modifyPositionData: any,
@@ -503,20 +495,6 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
         get().decreaseActions.calculatePositionValuesAfterDecrease(fiat, modifyPositionData);
       },
 
-      setMaxDeltaCollateral: (fiat, modifyPositionData) => {
-        const deltaCollateral = modifyPositionData.position.collateral;
-
-        // Re-estimate new collateralization ratio and debt
-        set((state) => ({
-          decreaseState: {
-            ...state.decreaseState,
-            deltaCollateral,
-          },
-          formDataLoading: true,
-        }));
-        get().decreaseActions.calculatePositionValuesAfterDecrease(fiat, modifyPositionData);
-      },
-
       setSlippagePct: (fiat, value, modifyPositionData) => {
         set((state) => ({
           decreaseState: { ...state.decreaseState, slippagePct: value },
@@ -530,15 +508,6 @@ export const useBorrowStore = create<BorrowState & BorrowActions>()((set, get) =
           decreaseState: { ...state.decreaseState, deltaDebt: value },
           formDataLoading: true,
         }));
-        get().decreaseActions.calculatePositionValuesAfterDecrease(fiat, modifyPositionData);
-      },
-
-      setMaxDeltaDebt: (fiat, modifyPositionData) => {
-        const deltaDebt = normalDebtToDebt(
-          modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate
-        );
-
-        set((state) => ({ decreaseState: { ...state.decreaseState, deltaDebt }, formDataLoading: true }));
         get().decreaseActions.calculatePositionValuesAfterDecrease(fiat, modifyPositionData);
       },
 

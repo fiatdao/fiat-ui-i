@@ -1,4 +1,4 @@
-import { decToScale, decToWad, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
+import { decToScale, decToWad, normalDebtToDebt, scaleToDec, wadToDec, ZERO } from '@fiatdao/sdk';
 import { Button, Card, Grid, Input, Loading, Modal, Spacer, Switch, Text } from '@nextui-org/react';
 import { Slider } from 'antd';
 import 'antd/dist/antd.css';
@@ -690,7 +690,7 @@ export const DecreaseForm = ({
             label={
               <InputLabelWithMax
                 label='Collateral to withdraw and swap'
-                onMaxClick={() => borrowStore.decreaseActions.setMaxDeltaCollateral(contextData.fiat, modifyPositionData)}
+                onMaxClick={() => borrowStore.decreaseActions.setDeltaCollateral(contextData.fiat, floor4(wadToDec(modifyPositionData.position.collateral)).toString(), modifyPositionData)}
               />
             }
             rightAdornment={modifyPositionData.collateralType.metadata.symbol}
@@ -719,7 +719,7 @@ export const DecreaseForm = ({
           label={
             <InputLabelWithMax
               label='FIAT to pay back'
-              onMaxClick={() => borrowStore.decreaseActions.setMaxDeltaDebt(contextData.fiat, modifyPositionData)}
+              onMaxClick={() => borrowStore.decreaseActions.setDeltaDebt(contextData.fiat, floor4(wadToDec(normalDebtToDebt(modifyPositionData.position.normalDebt, modifyPositionData.collateralType.state.codex.virtualRate))).toString(), modifyPositionData)}
             />
           }
           rightAdornment={'FIAT'}
