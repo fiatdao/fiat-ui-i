@@ -21,7 +21,6 @@ import useStore, { initialState } from '../src/state/stores/globalStore';
 
 const Home: NextPage = () => {
   const provider = useProvider();
-  console.log({provider})
   const { address, connector } = useAccount({ onConnect: () => resetState(), onDisconnect: () => resetState() });
   const { chain } = useNetwork();
   const addRecentTransaction = useAddRecentTransaction();
