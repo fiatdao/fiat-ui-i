@@ -13,6 +13,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { alchemyProvider } from 'wagmi/providers/alchemy';
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/global.css';
 
@@ -20,7 +21,12 @@ const { chains, provider, webSocketProvider } = configureChains([
     chain.mainnet, ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === 'true' ? [chain.goerli] : [])
   ],
   [
-    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY }),
+    (process.env.NEXT_PUBLIC_GANACHE_LOCAL && process.env.NODE_ENV === 'development' ? 
+      jsonRpcProvider({
+        rpc: (chain) => ({
+          http: `http://127.0.0.1:8545`,
+        }),
+      }) : alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY })),
   ]);
 
 const { wallets } = getDefaultWallets({
