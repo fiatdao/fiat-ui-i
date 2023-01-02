@@ -4,7 +4,7 @@ import { connectButtonCSS, ProxyButton } from './ProxyButton';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ResourcesModal } from './ResourcesModal';
 import { queryMeta } from '@fiatdao/sdk';
-import { chain as chains, useAccount, useBlockNumber, useNetwork, useProvider } from 'wagmi';
+import { chain as chains, useAccount, useBlockNumber, useNetwork } from 'wagmi';
 import { useFiatBalance } from '../state/queries/useFiatBalance';
 import useStore from '../state/stores/globalStore';
 
@@ -16,14 +16,10 @@ interface BlockSyncStatus {
   message: string;
 }
 
-const USE_GANACHE = process.env.NEXT_PUBLIC_GANACHE_LOCAL && process.env.NODE_ENV === 'development';
-
 export const HeaderBar = (props: any) => {
   const [showResourcesModal, setShowResourcesModal] = React.useState<boolean>(false);
   const [syncStatus, setSyncStatus] = React.useState<BlockSyncStatus>();
   const {data: providerBlockNumber, refetch} = useBlockNumber();
-  const provider = useProvider();
-  console.log({providerBlockNumber})
 
   const fiat = useStore((state) => state.fiat);
 
@@ -31,40 +27,21 @@ export const HeaderBar = (props: any) => {
   const { address } = useAccount();
   const { data: fiatBalance } = useFiatBalance(fiat, chain?.id ?? chains.mainnet.id, address ?? '');
 
-  const handleFastForward = async () => {
-    const result = await provider.send('evm_mine');
-    console.log({result})
-  }
-
   const queryBlockNumber = React.useCallback(async () => {
     if (!fiat) return;
     if (!providerBlockNumber) return;
-    if (USE_GANACHE) {
-      const subgraphBlockNumber = providerBlockNumber;
-      const blockDiff = 0;
-      const status = 'success';
-      const message = 'Ganache Fork'
-      setSyncStatus({
-        subgraphBlockNumber,
-        providerBlockNumber,
-        blockDiff,
-        status,
-        message,
-      });
-    } else {
-      const { _meta } = await fiat.query(queryMeta);
-      const subgraphBlockNumber = _meta?.block.number;
-      const blockDiff = providerBlockNumber - subgraphBlockNumber;
-      const status = blockDiff > 5 ? 'error' : blockDiff > 0 ? 'warning' : 'success';
-      const message = blockDiff === 0 ? 'Synced' : `Syncing (${blockDiff} block${(blockDiff === 1) ? '' : 's'} behind)`
-      setSyncStatus({
-        subgraphBlockNumber,
-        providerBlockNumber,
-        blockDiff,
-        status,
-        message,
-      });
-    }
+    const { _meta } = await fiat.query(queryMeta);
+    const subgraphBlockNumber = _meta?.block.number;
+    const blockDiff = providerBlockNumber - subgraphBlockNumber;
+    const status = blockDiff > 5 ? 'error' : blockDiff > 0 ? 'warning' : 'success';
+    const message = blockDiff === 0 ? 'Synced' : `Syncing (${blockDiff} block${(blockDiff === 1) ? '' : 's'} behind)`
+    setSyncStatus({
+      subgraphBlockNumber,
+      providerBlockNumber,
+      blockDiff,
+      status,
+      message,
+    });
   }, [fiat, providerBlockNumber])
 
   React.useEffect(() => {
@@ -90,10 +67,9 @@ export const HeaderBar = (props: any) => {
         </Link>
         <Tooltip content={syncStatus?.message} placement='left' css={{ whiteSpace: 'nowrap' }}>
           <Badge color={syncStatus?.status ?? 'default'} variant='dot' css={{ alignSelf: 'center', marginRight: '3px' }}/>
-          <Text size='$xs'css={{ alignSelf: 'center'}}>
+          <Text size='$xs'>
             {syncStatus?.subgraphBlockNumber}
           </Text>
-          { USE_GANACHE && <Button onClick={handleFastForward} size='xs' css={{ marginLeft: '3px' }}>Forward</Button> }
         </Tooltip>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: 0 }}>
