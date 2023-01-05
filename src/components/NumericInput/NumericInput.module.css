@@ -41,7 +41,7 @@
   pointer-events: none;
   margin: 0px;
   padding: 0 var(--nextui-space-sm) 0 0;
-  color: var(--nextui-colors-accents6);
+  color: var(--nextui-colors-gray600);
   font-size: var(--nextui-fontSizes-xs);
   line-height: var(--nextui-lineHeights-xs);
 }

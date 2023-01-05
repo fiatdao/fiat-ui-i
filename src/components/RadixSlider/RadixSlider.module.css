@@ -1,0 +1,74 @@
+.SliderRoot {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  touch-action: none;
+  width: 100%;
+}
+.SliderRoot[data-orientation='horizontal'] {
+  height: 20px;
+}
+.SliderRoot[data-orientation='vertical'] {
+  flex-direction: column;
+  width: 20px;
+  height: 100px;
+}
+
+.SliderLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--nextui-space-1);
+  /* extend labels slightly past edges of slider */
+  width: calc(100% + var(--nextui-space-6));
+  margin-left: calc(var(--nextui-space-3) * -1);
+}
+.SliderLabel {
+  font-size: var(--nextui-fontSizes-xs);
+  line-height: var(--nextui-lineHeights-xs);
+  color: var(--nextui-colors-gray600);
+}
+
+.SliderTrack {
+  /* nonlinear to represent coll ratio being mostly safe */
+  position: relative;
+  background-color: white;
+  flex-grow: 1;
+  height: 100%;
+  border-radius: 4px;
+}
+.SliderTrack[data-orientation='horizontal'] {
+  height: 3px;
+}
+.SliderTrack[data-orientation='vertical'] {
+  width: 3px;
+}
+.SliderTrack[data-disabled] {
+  opacity: 0.5;
+}
+
+.SliderRange {
+  position: absolute;
+  border-radius: 9999px;
+  height: 100%;
+}
+
+.SliderThumb {
+  display: block;
+  width: var(--nextui-space-6);
+  height: var(--nextui-space-6);
+  background-color: white;
+  border-radius: 100%;
+  box-shadow: 0 0 0 2px var(--nextui-colors-primary);
+}
+.SliderThumb:hover {
+  background-color: white;
+}
+.SliderThumb:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--nextui-colors-primaryBorder);
+}
+.SliderThumb[data-disabled] {
+  background: black;
+}
