@@ -25,7 +25,7 @@ export function RadixSlider(props: SliderProps): any {
       >
         <Slider.Track
           className={styles.SliderTrack}
-          /* gradient for non linear
+          /* gradient for non linear coll ratio riskiness. should probably impl as a variant
           style={{
             backgroundImage:
               inverted ? 'linear-gradient(90deg, var(--nextui-colors-success) 0%, var(--nextui-colors-warning) 95%, var(--nextui-colors-error) 100%)' :  'linear-gradient(90deg, var(--nextui-colors-error) 0%, var(--nextui-colors-warning) 5%, var(--nextui-colors-success) 100%)',
