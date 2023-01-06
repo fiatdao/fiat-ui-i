@@ -10,7 +10,6 @@ import {
   minCRForLeveredDeposit,
   minCRForLeveredWithdrawal,
   normalDebtToDebt,
-  scaleToDec,
   scaleToWad,
   WAD,
   wadToDec,
@@ -420,12 +419,13 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           
           // 3.
           // sum of upfront underliers provided by user and underliers bought via flashloan
-          const underlierIn = upFrontUnderliersBN.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
-          const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierIn, collateralType);
-          const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underlierIn);
+          const underlierInIdeal = upFrontUnderliersBN.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
+          const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierInIdeal, collateralType);
+          const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underlierInIdeal);
           const fiatToUnderlierRateWithPriceImpact = (await userActions.fiatToUnderlier(
             fiat, flashloanIdeal, collateralType)
           ).mul(WAD).div(flashloanIdeal);
+          const underlierIn = upFrontUnderliersBN.add(flashloanIdeal.mul(fiatToUnderlierRateWithPriceImpact).div(WAD));
 
           // 4.
           const addDebt = flashloanIdeal;
@@ -594,12 +594,13 @@ export const useLeverStore = create<LeverState & LeverActions>()((set, get) => (
           
           // 3.
           // sum of upfront underliers provided by user and underliers bought via flashloan
-          const underlierIn = upFrontUnderliersBN.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
-          const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierIn, collateralType);
-          const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underlierIn);
+          const underlierInIdeal = upFrontUnderliersBN.add(flashloanIdeal.mul(fiatToUnderlierRateIdeal).div(WAD));
+          const collateralOut = await userActions.underlierToCollateralToken(fiat, underlierInIdeal, collateralType);
+          const underlierToCollateralRateWithPriceImpact = collateralOut.mul(underlierScale).div(underlierInIdeal);
           const fiatToUnderlierRateWithPriceImpact = (await userActions.fiatToUnderlier(
             fiat, flashloanIdeal, collateralType)
           ).mul(WAD).div(flashloanIdeal);
+          const underlierIn = upFrontUnderliersBN.add(flashloanIdeal.mul(fiatToUnderlierRateWithPriceImpact).div(WAD));
 
           // 4.
           const addDebt = flashloanIdeal;
