@@ -1,13 +1,44 @@
+import { styled } from '@nextui-org/react';
 import { Label } from '@radix-ui/react-label';
 import * as RadixSlider from '@radix-ui/react-slider';
-import { useMemo } from 'react';
+import type * as Stitches from '@stitches/react';
 import styles from './Slider.module.css';
 
-interface SliderProps extends RadixSlider.SliderProps {
+const RadixSliderTrack = styled(RadixSlider.Track, {
+  position: 'relative',
+  backgroundColor: 'white',
+  flexGrow: '1',
+  height: '100%',
+  borderRadius: '4px',
+  '&[data-orientation="horizontal"]': { height: '3px' },
+  '&[data-orientation="vertical"]': { width: '3px' },
+  '&[data-disabled]': { opacity: 0.5 },
+
+  variants: {
+    color: {
+      gradient: {
+        backgroundImage:
+          'linear-gradient(90deg, var(--nextui-colors-error) 0%, var(--nextui-colors-warning) 5%, var(--nextui-colors-success) 100%)',
+        '&[data-inverted]': {
+          backgroundImage:
+            'linear-gradient(90deg, var(--nextui-colors-success) 0%, var(--nextui-colors-warning) 95%, var(--nextui-colors-error) 100%)',
+        },
+      },
+    },
+  },
+});
+
+interface BaseSliderProps extends RadixSlider.SliderProps {
   maxLabel?: string;
   minLabel?: string;
-  // This color variant defined explicitly in props because we need to apply different styles based on inverted prop
-  color?: 'gradient';
+  // Override `color` type from RadixSlider.SliderProps to `any`
+  color?: any;
+}
+
+interface SliderProps extends BaseSliderProps {
+  // Narrow `color` type to only allow the specific variants in RadixSliderTrack
+  // This allows autocomplete engines to suggest your color variants when using the Slider component's `color` prop
+  color?: Stitches.VariantProps<typeof RadixSliderTrack>['color'];
 }
 
 export const Slider = (props: SliderProps) => {
@@ -25,16 +56,6 @@ export const Slider = (props: SliderProps) => {
     value,
   } = props;
 
-  const sliderStyles = useMemo((): string => {
-    const sliderStyles = [styles.SliderTrack];
-    if (color === 'gradient' && inverted) {
-      sliderStyles.push(styles.SliderTrack_GradientInverted);
-    } else if (color === 'gradient' && !inverted) {
-      sliderStyles.push(styles.SliderTrack_Gradient);
-    }
-    return sliderStyles.join(' ');
-  }, [color, inverted]);
-
   return (
     <>
       <RadixSlider.Root
@@ -48,9 +69,9 @@ export const Slider = (props: SliderProps) => {
         step={step}
         value={value}
       >
-        <RadixSlider.Track className={sliderStyles}>
+        <RadixSliderTrack data-inverted={inverted} color={color}>
           <RadixSlider.Range className={styles.SliderRange} />
-        </RadixSlider.Track>
+        </RadixSliderTrack>
         <RadixSlider.Thumb className={styles.SliderThumb} />
       </RadixSlider.Root>
 

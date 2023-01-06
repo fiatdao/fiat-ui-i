@@ -38,12 +38,6 @@
   height: 100%;
   border-radius: 4px;
 }
-.SliderTrack_Gradient {
-  background-image: linear-gradient(90deg, var(--nextui-colors-error) 0%, var(--nextui-colors-warning) 5%, var(--nextui-colors-success) 100%);
-}
-.SliderTrack_GradientInverted {
-  background-image: linear-gradient(90deg, var(--nextui-colors-success) 0%, var(--nextui-colors-warning) 95%, var(--nextui-colors-error) 100%);
-}
 .SliderTrack[data-orientation='horizontal'] {
   height: 3px;
 }

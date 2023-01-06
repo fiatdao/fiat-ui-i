@@ -180,8 +180,8 @@ export const CreateForm = ({
           >
             <Slider
               aria-label={'Targeted Collateralization Ratio'}
-              disabled={disableActions}
               color='gradient'
+              disabled={disableActions}
               inverted
               max={5.0}
               maxLabel={'Safer'}

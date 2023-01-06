@@ -176,7 +176,7 @@ export const LeverCreateForm = ({
                   maxLabel={'Safer'}
                   min={floor4(wadToDec(minCollRatio))}
                   minLabel={'Riskier'}
-                  onChange={(value) => { setTargetedCollRatio(fiat, Number(value), modifyPositionData) }}
+                  onValueChange={(value) => { setTargetedCollRatio(fiat, Number(value), modifyPositionData) }}
                   step={0.001}
                   value={[Number(wadToDec(targetedCollRatio))]}
                 />
@@ -473,7 +473,7 @@ export const LeverIncreaseForm = ({
                   maxLabel={'Safer'}
                   min={floor4(wadToDec(minCollRatio))}
                   minLabel={'Riskier'}
-                  onChange={(value) => {
+                  onValueChange={(value) => {
                     setTargetedCollRatio(fiat, Number(value), modifyPositionData);
                   }}
                   step={0.001}
@@ -784,7 +784,7 @@ export const LeverDecreaseForm = ({
                   maxLabel={'Safer'}
                   min={floor4(wadToDec(minCollRatio))}
                   minLabel={'Riskier'}
-                  onChange={(value) => { setTargetedCollRatio(fiat, Number(value), modifyPositionData) }}
+                  onValueChange={(value) => { setTargetedCollRatio(fiat, Number(value), modifyPositionData) }}
                   step={0.001}
                   value={[Number(wadToDec(targetedCollRatio))]}
                 />
