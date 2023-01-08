@@ -706,7 +706,7 @@ export const LeverDecreaseForm = ({
   const { action: currentTxAction } = transactionData;
 
   const subTokenAmount = useMemo(() => {
-    return leverStore.decreaseState.subTokenAmountStr=== '' ? ZERO : decToScale(leverStore.decreaseState.subTokenAmountStr, tokenScale)
+    return leverStore.decreaseState.subTokenAmountStr === '' ? ZERO : decToScale(leverStore.decreaseState.subTokenAmountStr, tokenScale)
   }, [leverStore.decreaseState.subTokenAmountStr, tokenScale])
   
   const renderFormAlerts = () => {

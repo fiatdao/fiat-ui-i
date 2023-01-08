@@ -27,7 +27,7 @@ export const initialState = {
   },
 }
 
-const useStore = create<any>()((set: any, get: any) => ({
+const useStore = create<any>()((set: any) => ({
   fiat: initialState.fiat,
   user: initialState.user,
   explorerUrl: initialState.explorerUrl,
