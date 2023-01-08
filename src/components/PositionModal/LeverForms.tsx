@@ -54,7 +54,7 @@ export const LeverCreateForm = ({
     monetaDelegate,
   } = modifyPositionData;
   const {
-    upFrontUnderliers, collateralSlippagePct, underlierSlippagePct, targetedCollRatio,
+    upFrontUnderliersStr, collateralSlippagePctStr, underlierSlippagePctStr, targetedCollRatio,
     addDebt, minUnderliersToBuy, minTokenToBuy, 
     collateral, collRatio, debt, leveragedGain, leveragedAPY, minCollRatio, maxCollRatio
   } = leverStore.createState;
@@ -63,9 +63,9 @@ export const LeverCreateForm = ({
   } = leverStore.createActions;
   const { action: currentTxAction } = transactionData;
 
-  const upFrontUnderliersBN = useMemo(() => {
-    return leverStore.createState.upFrontUnderliers === '' ? ZERO : decToScale(leverStore.createState.upFrontUnderliers, underlierScale)
-  }, [leverStore.createState.upFrontUnderliers, underlierScale])
+  const upFrontUnderliers = useMemo(() => {
+    return leverStore.createState.upFrontUnderliersStr === '' ? ZERO : decToScale(leverStore.createState.upFrontUnderliersStr, underlierScale)
+  }, [leverStore.createState.upFrontUnderliersStr, underlierScale])
 
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -120,7 +120,7 @@ export const LeverCreateForm = ({
         )}
         <NumericInput
           disabled={disableActions}
-          value={upFrontUnderliers.toString()}
+          value={upFrontUnderliersStr}
           onChange={(event) => { setUpFrontUnderliers(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           label={'Underlier to swap'}
@@ -134,7 +134,7 @@ export const LeverCreateForm = ({
           <Grid>
             <NumericInput
               disabled={disableActions}
-              value={underlierSlippagePct.toString()}
+              value={underlierSlippagePctStr}
               onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='1.00'
@@ -146,7 +146,7 @@ export const LeverCreateForm = ({
           <Grid>
             <NumericInput
               disabled={disableActions}
-              value={collateralSlippagePct.toString()}
+              value={collateralSlippagePctStr}
               onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               step='0.01'
               placeholder='1.00'
@@ -280,9 +280,9 @@ export const LeverCreateForm = ({
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliersBN) ?? false}
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
               onChange={async () => {
-                if (!upFrontUnderliersBN.isZero() && underlierAllowance?.gte(upFrontUnderliersBN)) {
+                if (!upFrontUnderliers.isZero() && underlierAllowance?.gte(upFrontUnderliers)) {
                   try {
                     setSubmitError('');
                     await unsetUnderlierAllowanceForProxy(fiat);
@@ -292,7 +292,7 @@ export const LeverCreateForm = ({
                 } else {
                   try {
                     setSubmitError('');
-                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliersBN);
+                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers);
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }
@@ -319,16 +319,16 @@ export const LeverCreateForm = ({
             leverStore.formWarnings.length !== 0 ||
             disableActions ||
             !hasProxy ||
-            upFrontUnderliersBN?.isZero() ||
+            upFrontUnderliers?.isZero() ||
             minTokenToBuy?.isZero() ||
-            underlierAllowance?.lt(upFrontUnderliersBN) ||
+            underlierAllowance?.lt(upFrontUnderliers) ||
             monetaDelegate === false
           }
           icon={(disableActions && currentTxAction === 'createLeveredPosition') ? (<Loading size='xs' />) : null}
           onPress={async () => {
             try {
               setSubmitError('');
-              await createLeveredPosition(upFrontUnderliersBN, addDebt, minUnderliersToBuy, minTokenToBuy);
+              await createLeveredPosition(upFrontUnderliers, addDebt, minUnderliersToBuy, minTokenToBuy);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -386,7 +386,7 @@ export const LeverIncreaseForm = ({
     position
   } = modifyPositionData;
   const {
-    upFrontUnderliers, collateralSlippagePct, underlierSlippagePct,
+    upFrontUnderliersStr, collateralSlippagePctStr, underlierSlippagePctStr,
     addDebt, minUnderliersToBuy, minTokenToBuy, targetedCollRatio,
     collateral, collRatio, debt, minCollRatio, maxCollRatio
   } = leverStore.increaseState;
@@ -395,9 +395,9 @@ export const LeverIncreaseForm = ({
   } = leverStore.increaseActions;
   const { action: currentTxAction } = transactionData;
 
-  const upFrontUnderliersBN = useMemo(() => {
-    return leverStore.increaseState.upFrontUnderliers === '' ? ZERO : decToScale(leverStore.increaseState.upFrontUnderliers, underlierScale)
-  }, [leverStore.increaseState.upFrontUnderliers, underlierScale])
+  const upFrontUnderliers = useMemo(() => {
+    return leverStore.increaseState.upFrontUnderliersStr === '' ? ZERO : decToScale(leverStore.increaseState.upFrontUnderliersStr, underlierScale)
+  }, [leverStore.increaseState.upFrontUnderliersStr, underlierScale])
   
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -433,7 +433,7 @@ export const LeverIncreaseForm = ({
         <NumericInput
           label={'Underlier to deposit'}
           disabled={disableActions}
-          value={upFrontUnderliers.toString()}
+          value={upFrontUnderliersStr}
           onChange={(event) => { setUpFrontUnderliers(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           inputMode='decimal'
@@ -447,7 +447,7 @@ export const LeverIncreaseForm = ({
           <Grid>
             <NumericInput
               disabled={disableActions}
-              value={underlierSlippagePct.toString()}
+              value={underlierSlippagePctStr}
               onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               placeholder='1.00'
               label='Slippage (FIAT to Underlier swap)'
@@ -458,7 +458,7 @@ export const LeverIncreaseForm = ({
           <Grid>
             <NumericInput
               disabled={disableActions}
-              value={collateralSlippagePct.toString()}
+              value={collateralSlippagePctStr}
               onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               placeholder='1.00'
               label='Slippage (Underlier to Collateral swap)'
@@ -591,9 +591,9 @@ export const LeverIncreaseForm = ({
               // Next UI Switch `checked` type is wrong, this is necessary
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
               // @ts-ignore
-              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliersBN) ?? false}
+              checked={() => underlierAllowance?.gt(0) && underlierAllowance?.gte(upFrontUnderliers) ?? false}
               onChange={async () => {
-                if(!upFrontUnderliersBN.isZero() && underlierAllowance.gte(upFrontUnderliersBN)) {
+                if(!upFrontUnderliers.isZero() && underlierAllowance.gte(upFrontUnderliers)) {
                   try {
                     setSubmitError('');
                     await unsetUnderlierAllowanceForProxy(fiat);
@@ -603,7 +603,7 @@ export const LeverIncreaseForm = ({
                 } else {
                   try {
                     setSubmitError('');
-                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliersBN)
+                    await setUnderlierAllowanceForProxy(fiat, upFrontUnderliers)
                   } catch (e: any) {
                     setSubmitError(e.message);
                   }
@@ -629,8 +629,8 @@ export const LeverIncreaseForm = ({
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
             if (monetaDelegate === false) return true;
-            if (upFrontUnderliersBN.isZero() && minTokenToBuy.isZero()) return true;
-            if (!upFrontUnderliersBN.isZero() && underlierAllowance.lt(upFrontUnderliersBN)) return true;
+            if (upFrontUnderliers.isZero() && minTokenToBuy.isZero()) return true;
+            if (!upFrontUnderliers.isZero() && underlierAllowance.lt(upFrontUnderliers)) return true;
             return false;
           })()}
           icon={
@@ -645,7 +645,7 @@ export const LeverIncreaseForm = ({
           onPress={async () => {
             try {
               setSubmitError('');
-              await buyCollateralAndIncreaseLever(upFrontUnderliersBN, addDebt, minUnderliersToBuy, minTokenToBuy);
+              await buyCollateralAndIncreaseLever(upFrontUnderliers, addDebt, minUnderliersToBuy, minTokenToBuy);
               onClose();
             } catch (e: any) {
               setSubmitError(e.message);
@@ -696,7 +696,7 @@ export const LeverDecreaseForm = ({
     position
   } = modifyPositionData;
   const {
-    subTokenAmount, collateralSlippagePct, underlierSlippagePct,
+    subTokenAmountStr, collateralSlippagePctStr, underlierSlippagePctStr,
     maxUnderliersToSell, minUnderliersToBuy, targetedCollRatio,
     collateral, debt, collRatio, minCollRatio, maxCollRatio
   } = leverStore.decreaseState;
@@ -705,9 +705,9 @@ export const LeverDecreaseForm = ({
   } = leverStore.decreaseActions;
   const { action: currentTxAction } = transactionData;
 
-  const subTokenAmountBN = useMemo(() => {
-    return leverStore.decreaseState.subTokenAmount === '' ? ZERO : decToScale(leverStore.decreaseState.subTokenAmount, tokenScale)
-  }, [leverStore.decreaseState.subTokenAmount, tokenScale])
+  const subTokenAmount = useMemo(() => {
+    return leverStore.decreaseState.subTokenAmountStr=== '' ? ZERO : decToScale(leverStore.decreaseState.subTokenAmountStr, tokenScale)
+  }, [leverStore.decreaseState.subTokenAmountStr, tokenScale])
   
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -743,7 +743,7 @@ export const LeverDecreaseForm = ({
           <Grid>
             <NumericInput
               disabled={disableActions}
-              value={underlierSlippagePct.toString()}
+              value={underlierSlippagePctStr}
               onChange={(event) => { setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData) }}
               placeholder='0.01'
               label='Slippage (Underlier to FIAT swap)'
@@ -754,7 +754,7 @@ export const LeverDecreaseForm = ({
           <Grid>
             <NumericInput
               disabled={disableActions}
-              value={collateralSlippagePct.toString()}
+              value={collateralSlippagePctStr}
               onChange={(event) => { setCollateralSlippagePct(fiat, event.target.value, modifyPositionData) }}
               placeholder='0.01'
               label='Slippage (Collateral to Underlier swap)'
@@ -765,7 +765,7 @@ export const LeverDecreaseForm = ({
         </Grid.Container>
         <NumericInput
           disabled={disableActions}
-          value={subTokenAmount.toString()}
+          value={subTokenAmountStr}
           onChange={(event) => { setSubTokenAmount(fiat, event.target.value, modifyPositionData) }}
           placeholder='0'
           label={
@@ -913,7 +913,7 @@ export const LeverDecreaseForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
-            if (subTokenAmountBN.isZero() && leverStore.decreaseState.subDebt.isZero()) return true;
+            if (subTokenAmount.isZero() && leverStore.decreaseState.subDebt.isZero()) return true;
             return false;
           })()}
           icon={
@@ -929,7 +929,7 @@ export const LeverDecreaseForm = ({
             try {
               setSubmitError('');
               await sellCollateralAndDecreaseLever(
-                subTokenAmountBN,
+                subTokenAmount,
                 leverStore.decreaseState.subDebt,
                 leverStore.decreaseState.maxUnderliersToSell,
                 leverStore.decreaseState.minUnderliersToBuy
@@ -983,16 +983,16 @@ export const LeverRedeemForm = ({
     position
   } = modifyPositionData;
   const {
-    subTokenAmount, underlierSlippagePct,
+    subTokenAmountStr, underlierSlippagePctStr,
     maxUnderliersToSell, targetedCollRatio, underliersToRedeem,
     collateral, collRatio, debt, minCollRatio, maxCollRatio
   } = leverStore.redeemState;
   
   const { action: currentTxAction } = transactionData;
   
-  const subTokenAmountBN = useMemo(() => {
-    return leverStore.redeemState.subTokenAmount === '' ? ZERO : decToScale(leverStore.redeemState.subTokenAmount, tokenScale)
-  }, [leverStore.redeemState.subTokenAmount, tokenScale])
+  const subTokenAmount = useMemo(() => {
+    return leverStore.redeemState.subTokenAmountStr === '' ? ZERO : decToScale(leverStore.redeemState.subTokenAmountStr, tokenScale)
+  }, [leverStore.redeemState.subTokenAmountStr, tokenScale])
 
   const renderFormAlerts = () => {
     const formAlerts = [];
@@ -1024,7 +1024,7 @@ export const LeverRedeemForm = ({
         </Text>
         <NumericInput
           disabled={disableActions}
-          value={subTokenAmount.toString()}
+          value={subTokenAmountStr}
           onChange={(event) => {
             leverStore.redeemActions.setSubTokenAmount(fiat, event.target.value, modifyPositionData);
           }}
@@ -1046,7 +1046,7 @@ export const LeverRedeemForm = ({
         >
           <NumericInput
             disabled={disableActions}
-            value={underlierSlippagePct.toString()}
+            value={underlierSlippagePctStr}
             onChange={(event) => {
               leverStore.redeemActions.setUnderlierSlippagePct(fiat, event.target.value, modifyPositionData);
             }}
@@ -1190,7 +1190,7 @@ export const LeverRedeemForm = ({
           disabled={(() => {
             if (disableActions || !hasProxy) return true;
             if (leverStore.formErrors.length !== 0 || leverStore.formWarnings.length !== 0) return true;
-            if (subTokenAmountBN.isZero() && leverStore.redeemState.subDebt.isZero()) return true;
+            if (subTokenAmount.isZero() && leverStore.redeemState.subDebt.isZero()) return true;
             return false;
           })()}
           icon={
@@ -1206,7 +1206,7 @@ export const LeverRedeemForm = ({
             try {
               setSubmitError('');
               await redeemCollateralAndDecreaseLever(
-                subTokenAmountBN,
+                subTokenAmount,
                 leverStore.redeemState.subDebt,
                 leverStore.redeemState.maxUnderliersToSell
               );
