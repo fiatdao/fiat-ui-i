@@ -588,8 +588,8 @@ export const buildSellCollateralAndModifyDebtArgs = (
 export const buildRedeemCollateralAndModifyDebtArgs = (
   fiat: any,
   user: string,
-  collateralTypeData: any,
   proxies: any[],
+  collateralTypeData: any,
   deltaCollateral: BigNumber,
   deltaDebt: BigNumber,
   position: any
