@@ -2,16 +2,43 @@ import { styled } from '@nextui-org/react';
 import { Label } from '@radix-ui/react-label';
 import * as RadixSlider from '@radix-ui/react-slider';
 import type * as Stitches from '@stitches/react';
-import styles from './Slider.module.css';
+import { ReactNode } from 'react';
+
+const RadixSliderRoot = styled(RadixSlider.Root, {
+  cursor: 'pointer',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  userSelect: 'none',
+  touchAction: 'none',
+  width: '100%',
+  '&[data-orientation="horizontal"]': { height: '20px' },
+  '&[data-disabled]': { cursor: 'not-allowed' },
+});
+
+const RadixSliderLabels = styled('div', {
+  display: 'flex',
+  justifyContent: 'space-between',
+  marginTop: 'var(--nextui-space-1)',
+  // extend labels slightly past edges of slider
+  width: 'calc(100% + 0.75rem)',
+  // center labels on track
+  marginLeft: 'calc(0.375rem * -1)',
+});
+
+const SliderLabel = styled(Label,{
+  fontSize: 'var(--nextui-fontSizes-xs)',
+  lineHeight: 'var(--nextui-lineHeights-xs)',
+  color: 'var(--nextui-colors-gray600)',
+});
 
 const RadixSliderTrack = styled(RadixSlider.Track, {
   position: 'relative',
-  backgroundColor: 'white',
+  backgroundColor: 'var(--nextui-colors-gray300)',
   flexGrow: '1',
   height: '100%',
   borderRadius: '4px',
   '&[data-orientation="horizontal"]': { height: '3px' },
-  '&[data-orientation="vertical"]': { width: '3px' },
   '&[data-disabled]': { opacity: 0.5 },
 
   variants: {
@@ -28,11 +55,33 @@ const RadixSliderTrack = styled(RadixSlider.Track, {
   },
 });
 
+const RadixSliderRange = styled(RadixSlider.Range, {
+  position: 'absolute',
+  borderRadius: '9999px',
+  height: '100%',
+});
+
+const RadixSliderThumb = styled(RadixSlider.Thumb, {
+  display: 'block',
+  width: 'var(--nextui-space-6)',
+  height: 'var(--nextui-space-6)',
+  backgroundColor: 'white',
+  borderRadius: '100%',
+  boxShadow: '0 0 0 2px var(--nextui-colors-primary)',
+
+  '&:focus': {
+    outline: 'none',
+    boxShadow: '0 0 0 2px var(--nextui-colors-primaryBorder)',
+  },
+  '&[data-disabled]': { background: 'black' },
+});
+
 interface BaseSliderProps extends RadixSlider.SliderProps {
-  maxLabel?: string;
-  minLabel?: string;
   // Override `color` type from RadixSlider.SliderProps to `any`
   color?: any;
+  maxLabel?: ReactNode;
+  minLabel?: ReactNode;
+  orientation?: 'horizontal';
 }
 
 interface SliderProps extends BaseSliderProps {
@@ -58,10 +107,9 @@ export const Slider = (props: SliderProps) => {
 
   return (
     <>
-      <RadixSlider.Root
+      <RadixSliderRoot
         aria-label={ariaLabel}
         disabled={disabled}
-        className={styles.SliderRoot}
         inverted={inverted}
         max={max}
         min={min}
@@ -70,15 +118,15 @@ export const Slider = (props: SliderProps) => {
         value={value}
       >
         <RadixSliderTrack data-inverted={inverted} color={color}>
-          <RadixSlider.Range className={styles.SliderRange} />
+          <RadixSliderRange />
         </RadixSliderTrack>
-        <RadixSlider.Thumb className={styles.SliderThumb} />
-      </RadixSlider.Root>
+        <RadixSliderThumb />
+      </RadixSliderRoot>
 
-      <div className={styles.SliderLabels}>
-        <Label className={styles.SliderLabel}>{inverted ? maxLabel : minLabel}</Label>
-        <Label className={styles.SliderLabel}>{inverted ? minLabel : maxLabel}</Label>
-      </div>
+      <RadixSliderLabels>
+        <SliderLabel>{inverted ? maxLabel : minLabel}</SliderLabel>
+        <SliderLabel>{inverted ? minLabel : maxLabel}</SliderLabel>
+      </RadixSliderLabels>
     </>
   );
 };

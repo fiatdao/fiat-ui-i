@@ -1,4 +1,4 @@
-import { debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
+import { addressEq, debtToNormalDebt, decToWad, scaleToWad, WAD, wadToScale, ZERO } from '@fiatdao/sdk';
 import { BigNumber, Contract } from 'ethers';
 
 export const underlierToFIAT = async (
@@ -9,22 +9,26 @@ export const underlierToFIAT = async (
   if (underlierAmount.isZero()) return ZERO;
 
   const { vaultType, underlierToken } = collateralType.properties;
+  const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralType.metadata;
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  const poolsToFIAT = JSON.parse(JSON.stringify(pools)).reverse();
+  const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
+  if (!addressEq(underlierToken, assetsIn[0])) throw new Error('Invalid trade path');
 
   switch (vaultType) {
     case 'ERC20:EPT': {
       return await fiat.call(
-        leverEPTActions, 'underlierToFIAT', [leverEPTActions.fiatPoolId()], [underlierToken], underlierAmount
+        leverEPTActions, 'underlierToFIAT', poolsToFIAT, assetsIn, underlierAmount
       );
     }
     case 'ERC20:FY': {
       return await fiat.call(
-        leverFYActions, 'underlierToFIAT', [leverFYActions.fiatPoolId()], [underlierToken], underlierAmount
+        leverFYActions, 'underlierToFIAT', poolsToFIAT, assetsIn, underlierAmount
       );
     }
     case 'ERC20:SPT': {
       return await fiat.call(
-        leverSPTActions, 'underlierToFIAT', [leverSPTActions.fiatPoolId()], [underlierToken], underlierAmount
+        leverSPTActions, 'underlierToFIAT', poolsToFIAT, assetsIn, underlierAmount
       );
     }
     default: {
@@ -42,22 +46,24 @@ export const fiatToUnderlier = async (
   if (fiatAmount.isZero()) return ZERO;
 
   const { vaultType, underlierToken } = collateralType.properties;
+  const { fiatToUnderlierTradePath: { pools: poolsToUnderlier, assetsOut } } = collateralType.metadata;
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  if (!addressEq(underlierToken, assetsOut[assetsOut.length - 1])) throw new Error('Invalid trade path');
 
   switch (vaultType) {
     case 'ERC20:EPT': {
       return await fiat.call(
-        leverEPTActions, 'fiatToUnderlier', [leverEPTActions.fiatPoolId()], [underlierToken], fiatAmount
+        leverEPTActions, 'fiatToUnderlier', poolsToUnderlier, assetsOut, fiatAmount
       );
     }
     case 'ERC20:FY': {
       return await fiat.call(
-        leverFYActions, 'fiatToUnderlier', [leverFYActions.fiatPoolId()], [underlierToken], fiatAmount
+        leverFYActions, 'fiatToUnderlier', poolsToUnderlier, assetsOut, fiatAmount
       );
     }
     case 'ERC20:SPT': {
       return await fiat.call(
-        leverSPTActions, 'fiatToUnderlier', [leverSPTActions.fiatPoolId()], [underlierToken], fiatAmount
+        leverSPTActions, 'fiatToUnderlier', poolsToUnderlier, assetsOut, fiatAmount
       );
     }
     default: {
@@ -74,22 +80,26 @@ export const fiatForUnderlier = async (
   if (fiatAmount.isZero()) return ZERO;
 
   const { vaultType, underlierToken } = collateralType.properties;
+  const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralType.metadata;
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
+  const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
+  const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
+  if (!addressEq(underlierToken, assetsIn[0])) throw new Error('Invalid trade path');
 
   switch (vaultType) {
     case 'ERC20:EPT': {
       return await fiat.call(
-        leverEPTActions, 'fiatForUnderlier', [leverEPTActions.fiatPoolId()], [underlierToken], fiatAmount
+        leverEPTActions, 'fiatForUnderlier', poolsToFIAT, assetsIn, fiatAmount
       );
     }
     case 'ERC20:FY': {
       return await fiat.call(
-        leverFYActions, 'fiatForUnderlier', [leverFYActions.fiatPoolId()], [underlierToken], fiatAmount
+        leverFYActions, 'fiatForUnderlier', poolsToFIAT, assetsIn, fiatAmount
       );
     }
     case 'ERC20:SPT': {
       return await fiat.call(
-        leverSPTActions, 'fiatForUnderlier', [leverSPTActions.fiatPoolId()], [underlierToken], fiatAmount
+        leverSPTActions, 'fiatForUnderlier', poolsToFIAT, assetsIn, fiatAmount
       );
     }
     default: {
@@ -666,13 +676,14 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
 ): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
+  const { fiatToUnderlierTradePath: { pools: poolsToUnderlier, assetsOut } } = collateralTypeData.metadata;
   const deadline = Math.round(+new Date() / 1000) + 3600;
 
   switch (properties.vaultType) {
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
       const sellFIATSwapParams = await leverEPTActions.buildSellFIATSwapParams(
-        [await leverEPTActions.fiatPoolId()], [properties.underlierToken], minUnderlierToBuy, deadline
+        poolsToUnderlier, assetsOut, minUnderlierToBuy, deadline
       );
       const args = {
         contract: leverEPTActions,
@@ -699,7 +710,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
       const sellFIATSwapParams = await leverFYActions.buildSellFIATSwapParams(
-        [await leverFYActions.fiatPoolId()], [properties.underlierToken], minUnderlierToBuy, deadline
+        poolsToUnderlier, assetsOut, minUnderlierToBuy, deadline
       );
       const args = {
         contract: leverFYActions,
@@ -724,7 +735,7 @@ export const buildBuyCollateralAndIncreaseLeverArgs = async (
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
       const sellFIATSwapParams = await leverSPTActions.buildSellFIATSwapParams(
-        [await leverSPTActions.fiatPoolId()], [properties.underlierToken], minUnderlierToBuy, deadline
+        poolsToUnderlier, assetsOut, minUnderlierToBuy, deadline
       );
       const args = {
         contract: leverSPTActions,
@@ -767,7 +778,10 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
 ): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
+  const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
   const deadline = Math.round(+new Date() / 1000) + 3600;
+  const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
+  const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
   let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
   if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
@@ -778,7 +792,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
       const buyFIATSwapParams = await leverEPTActions.buildBuyFIATSwapParams(
-        [await leverEPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
       );
       const args = {
         contract: leverEPTActions,
@@ -805,7 +819,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
       const buyFIATSwapParams = await leverFYActions.buildBuyFIATSwapParams(
-        [await leverFYActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
       );
       const args = {
         contract: leverFYActions,
@@ -830,7 +844,7 @@ export const buildSellCollateralAndDecreaseLeverArgs = async (
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
       const buyFIATSwapParams = await leverSPTActions.buildBuyFIATSwapParams(
-        [await leverSPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
       );
       const args = {
         contract: leverSPTActions,
@@ -872,7 +886,10 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
 ): Promise<{ contract: Contract, methodName: string, methodArgs: any[] }> => {
   const { leverEPTActions, leverFYActions, leverSPTActions } = fiat.getContracts();
   const { properties } = collateralTypeData;
+  const { fiatToUnderlierTradePath: { pools, assetsOut } } = collateralTypeData.metadata;
   const deadline = Math.round(+new Date() / 1000) + 3600;
+  const poolsToFIAT = JSON.parse(JSON.stringify(pools)); // TODO: expected it to be reversed
+  const assetsIn = JSON.parse(JSON.stringify(assetsOut)).reverse();
 
   let subNormalDebt = addDeltaNormalBuffer(debtToNormalDebt(subDebt, collateralTypeData.state.codex.virtualRate));
   if (position.normalDebt.sub(subNormalDebt).lt(WAD)) subNormalDebt = position.normalDebt;
@@ -883,7 +900,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
     case 'ERC20:EPT': {
       if (!properties.eptData) throw new Error('Missing EPT data');
       const buyFIATSwapParams = await leverEPTActions.buildBuyFIATSwapParams(
-        [await leverEPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
       );
       const args = {
         contract: leverEPTActions,
@@ -903,7 +920,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
     case 'ERC20:FY': {
       if (!properties.fyData) throw new Error('Missing FY data');
       const buyFIATSwapParams = await leverFYActions.buildBuyFIATSwapParams(
-        [await leverFYActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
       );
       const args = {
         contract: leverFYActions,
@@ -923,7 +940,7 @@ export const buildRedeemCollateralAndDecreaseLeverArgs = async (
     case 'ERC20:SPT': {
       if (!properties.sptData) throw new Error('Missing SPT data');
       const buyFIATSwapParams = await leverSPTActions.buildBuyFIATSwapParams(
-        [await leverSPTActions.fiatPoolId()], [properties.underlierToken], maxUnderliersToSell, deadline
+        poolsToFIAT, assetsIn, maxUnderliersToSell, deadline
       );
       const args = {
         contract: leverSPTActions,
