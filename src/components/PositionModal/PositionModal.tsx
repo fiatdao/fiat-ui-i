@@ -229,7 +229,7 @@ const PositionModalBody = (props: PositionModalProps) => {
           </Text>
         </Modal.Header>
       <Modal.Body>
-        { !(leverModeActive && vaultType==='ERC1155:FC') && 
+        { !(leverModeActive && vaultType === 'ERC1155:FC') && 
           <Navbar
             variant='static'
             isCompact
