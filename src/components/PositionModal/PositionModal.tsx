@@ -119,6 +119,14 @@ const PositionModalBody = (props: PositionModalProps) => {
 
   const renderForm = () => {
     if (leverModeActive) {
+      const { vaultType } = modifyPositionData?.collateralType?.properties;
+      if (vaultType === 'ERC1155:FC') {
+        return (
+          <Text css={{marginBottom: '10px'}}>
+            FIAT I currently does not provide 1-click leverage for Notional Finance. Please use <a href='https://beta.notional.finance/vaults' target='_blank' rel='noreferrer'>https://beta.notional.finance/vaults</a>
+          </Text>
+        )
+      }
       return !!selectedCollateralTypeId && actionMode === Mode.CREATE
           ? <LeverCreateForm
               createLeveredPosition={props.createLeveredPosition}
