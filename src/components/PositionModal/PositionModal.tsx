@@ -57,7 +57,7 @@ const PositionModalBody = (props: PositionModalProps) => {
   const selectedCollateralTypeId = useStore((state) => state.selectedCollateralTypeId);
   const selectedPositionId = useStore((state) => state.selectedPositionId);
 
-  const { vaultType } = modifyPositionData?.collateralType?.properties;
+  const vaultType = modifyPositionData?.collateralType?.properties?.vaultType;
 
   const matured = React.useMemo(() => {
     const maturity = modifyPositionData.collateralType?.properties.maturity.toString();
